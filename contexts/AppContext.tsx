@@ -52,7 +52,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       if (result.success && result.user) {
         if (result.user.roles.includes('ADMIN')) {
           setIsAwaitingOtp(true);
-          // Store email for OTP verification
           localStorage.setItem('pendingEmail', email);
           return { success: true, message: result.message };
         } else {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Order, Customer, Product, OrderItem, OrderStatus } from '../../types';
 import { api } from '../../services/api';
 import { useAppContext } from '../../contexts/AppContext';
@@ -22,36 +22,39 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
   const { currentUser } = useAppContext();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    customer_id: '',
-    priority: 'Normale',
-    order_date: new Date().toISOString().split('T')[0],
-    delivery_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    commercial: '',
+    nom_propriete: '',
+    zone: '',
+    type_panneau: '',
+    avec_logo: '',
+    support: '',
+    nom_a_afficher: ''
   });
-  const [orderItems, setOrderItems] = useState<Array<{
-    product_id: string;
-    quantity: number;
-    specifications: string;
-  }>>([{ product_id: '', quantity: 1, specifications: '' }]);
 
-  const calculateTotals = () => {
-    let subtotal = 0;
-    orderItems.forEach(item => {
-      const product = products.find(p => p.product_id === parseInt(item.product_id));
-      if (product) {
-        subtotal += product.unit_price * item.quantity;
-      }
-    });
-    const taxAmount = subtotal * 0.2;
-    const totalAmount = subtotal + taxAmount;
-    
-    return { subtotal, taxAmount, totalAmount };
-  };
+  const [panneaux, setPanneaux] = useState([
+    { taille_h: '', taille_v: '', contenu: '' },
+    { taille_h: '', taille_v: '', contenu: '' },
+    { taille_h: '', taille_v: '', contenu: '' },
+    { taille_h: '', taille_v: '', contenu: '' },
+    { taille_h: '', taille_v: '', contenu: '' },
+    { taille_h: '', taille_v: '', contenu: '' }
+  ]);
 
-  const { subtotal, taxAmount, totalAmount } = calculateTotals();
+  const zones = ['R0', 'R1', 'R2', 'R3', 'R5', 'R6'];
+  const typesPanneau = ['Panneau', 'Oneway'];
+  const optionsContenu = [
+    'Millenium', 'Galaxy', 'Aqua', 'Optimo', 'Orient', 
+    'Lumi-lap', 'Platinium', 'Encastreasy', 'Azur', 
+    'EasyFiche', 'Itri', 'Other'
+  ];
+  const optionsLogo = ['Avec', 'Sans'];
+  const supports = ['Bois', 'Forex'];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.customer_id || orderItems.some(item => !item.product_id || item.quantity <= 0)) {
+    if (!formData.commercial || !formData.nom_propriete || !formData.zone || 
+        !formData.type_panneau || !formData.avec_logo || !formData.support || 
+        !formData.nom_a_afficher) {
       alert('Veuillez remplir tous les champs obligatoires');
       return;
     }
@@ -59,53 +62,33 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
     setLoading(true);
     
     try {
-      const items: Omit<OrderItem, 'order_item_id' | 'order_id' | 'created_at'>[] = orderItems.map(item => {
-        const product = products.find(p => p.product_id === parseInt(item.product_id));
-        if (!product) throw new Error("Product not found");
-        
-        return {
-          product_id: parseInt(item.product_id),
-          quantity: item.quantity,
-          unit_price: product.unit_price,
-          total_price: product.unit_price * item.quantity,
-          specifications: item.specifications,
-        };
-      });
-
       const newOrder = await api.createOrder({
-        customer_id: parseInt(formData.customer_id),
+        customer_id: 0, // You might want to map this differently
         status: OrderStatus.NEW_ORDER,
-        priority: formData.priority,
-        order_date: formData.order_date,
-        delivery_date: formData.delivery_date,
-        subtotal_amount: subtotal,
-        tax_amount: taxAmount,
-        total_amount: totalAmount,
+        priority: 'Normale',
+        order_date: new Date().toISOString().split('T')[0],
+        delivery_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        subtotal_amount: 0,
+        tax_amount: 0,
+        total_amount: 0,
         created_by: currentUser?.user_id || 0,
         assigned_designer_id: null,
         assigned_imprimeur_id: null,
         is_required: true,
         created_at: '',
         updated_at: '',
-        items: []
+        items: [],
+        // Additional fields for your specific form
+        commercial: formData.commercial,
+        nom_propriete: formData.nom_propriete,
+        zone: formData.zone,
+        type_panneau: formData.type_panneau,
+        avec_logo: formData.avec_logo,
+        support: formData.support,
+        nom_a_afficher: formData.nom_a_afficher,
+        panneaux: panneaux
       });
 
-
-      //       const newOrder = await api.createOrder({
-      //   customer_id: parseInt(formData.customer_id),
-      //   status: OrderStatus.NEW_ORDER,
-      //   priority: formData.priority,
-      //   order_date: formData.order_date,
-      //   delivery_date: formData.delivery_date,
-      //   subtotal_amount: subtotal,
-      //   tax_amount: taxAmount,
-      //   total_amount: totalAmount,
-      //   created_by: currentUser?.user_id || 0,
-      //   assigned_designer_id: null,
-      //   assigned_imprimeur_id: null,
-      //   is_required: true,
-      // });
-      
       onOrderCreated(newOrder);
       onClose();
       resetForm();
@@ -118,45 +101,40 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
 
   const resetForm = () => {
     setFormData({
-      customer_id: '',
-      priority: 'Normale',
-      order_date: new Date().toISOString().split('T')[0],
-      delivery_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      commercial: '',
+      nom_propriete: '',
+      zone: '',
+      type_panneau: '',
+      avec_logo: '',
+      support: '',
+      nom_a_afficher: ''
     });
-    setOrderItems([{ product_id: '', quantity: 1, specifications: '' }]);
+    setPanneaux([
+      { taille_h: '', taille_v: '', contenu: '' },
+      { taille_h: '', taille_v: '', contenu: '' },
+      { taille_h: '', taille_v: '', contenu: '' },
+      { taille_h: '', taille_v: '', contenu: '' },
+      { taille_h: '', taille_v: '', contenu: '' },
+      { taille_h: '', taille_v: '', contenu: '' }
+    ]);
   };
 
-  const addOrderItem = () => {
-    setOrderItems([...orderItems, { product_id: '', quantity: 1, specifications: '' }]);
-  };
-
-  const removeOrderItem = (index: number) => {
-    if (orderItems.length > 1) {
-      setOrderItems(orderItems.filter((_, i) => i !== index));
-    }
-  };
-
-  const updateOrderItem = (index: number, field: string, value: string | number) => {
-    const updatedItems = [...orderItems];
-    updatedItems[index] = { ...updatedItems[index], [field]: value };
-    setOrderItems(updatedItems);
-  };
-
-  const getProductPrice = (productId: string) => {
-    const product = products.find(p => p.product_id === parseInt(productId));
-    return product ? product.unit_price : 0;
+  const updatePanneau = (index: number, field: string, value: string) => {
+    const updatedPanneaux = [...panneaux];
+    updatedPanneaux[index] = { ...updatedPanneaux[index], [field]: value };
+    setPanneaux(updatedPanneaux);
   };
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black/70 flex justify-center items-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[95vh] overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[95vh] overflow-y-auto">
         <div className="p-8 border-b border-slate-200">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-3xl font-bold text-slate-800">Nouvelle Commande</h2>
-              <p className="text-slate-600 text-lg mt-2">Créez une nouvelle commande pour votre client</p>
+              <h2 className="text-3xl font-bold text-slate-800">Commande de travaux - LAP</h2>
+              <p className="text-slate-600 text-lg mt-2">Nouvelle commande de travaux</p>
             </div>
             <button 
               onClick={onClose}
@@ -168,202 +146,220 @@ const CreateOrderModal: React.FC<CreateOrderModalProps> = ({
         </div>
 
         <form onSubmit={handleSubmit} className="p-8 space-y-8">
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+          {/* Informations de base */}
+          <div className="bg-gradient-to-br from-blue-50 to-blue-50/50 border border-blue-200 rounded-2xl p-6">
+            <h3 className="text-xl font-semibold text-slate-800 mb-6 flex items-center space-x-3">
+              <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
+                <Icon name="person" className="h-5 w-5 text-white" />
+              </div>
+              <span>Informations de base</span>
+            </h3>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-lg font-medium text-slate-700 mb-3">
+                  Commercial *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.commercial}
+                  onChange={(e) => setFormData(prev => ({ ...prev, commercial: e.target.value }))}
+                  className="w-full bg-white border border-slate-300 rounded-xl px-4 py-4 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+                  placeholder="Nom du commercial"
+                />
+              </div>
+
+              <div>
+                <label className="block text-lg font-medium text-slate-700 mb-3">
+                  Nom de propriété *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.nom_propriete}
+                  onChange={(e) => setFormData(prev => ({ ...prev, nom_propriete: e.target.value }))}
+                  className="w-full bg-white border border-slate-300 rounded-xl px-4 py-4 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+                  placeholder="Nom de la propriété"
+                />
+              </div>
+
+              <div>
+                <label className="block text-lg font-medium text-slate-700 mb-3">
+                  Zone *
+                </label>
+                <select
+                  required
+                  value={formData.zone}
+                  onChange={(e) => setFormData(prev => ({ ...prev, zone: e.target.value }))}
+                  className="w-full bg-white border border-slate-300 rounded-xl px-4 py-4 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+                >
+                  <option value="">Sélectionner une zone</option>
+                  {zones.map(zone => (
+                    <option key={zone} value={zone}>{zone}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-lg font-medium text-slate-700 mb-3">
+                  Panneau / One Way *
+                </label>
+                <select
+                  required
+                  value={formData.type_panneau}
+                  onChange={(e) => setFormData(prev => ({ ...prev, type_panneau: e.target.value }))}
+                  className="w-full bg-white border border-slate-300 rounded-xl px-4 py-4 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+                >
+                  <option value="">Sélectionner un type</option>
+                  {typesPanneau.map(type => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Configuration des panneaux */}
+          <div className="bg-gradient-to-br from-purple-50 to-purple-50/50 border border-purple-200 rounded-2xl p-6">
+            <h3 className="text-xl font-semibold text-slate-800 mb-6 flex items-center space-x-3">
+              <div className="w-10 h-10 bg-purple-600 rounded-xl flex items-center justify-center">
+                <Icon name="inventory" className="h-5 w-5 text-white" />
+              </div>
+              <span>Configuration des panneaux</span>
+            </h3>
+
             <div className="space-y-6">
-              <div className="bg-gradient-to-br from-blue-50 to-blue-50/50 border border-blue-200 rounded-2xl p-6">
-                <h3 className="text-xl font-semibold text-slate-800 mb-6 flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
-                    <Icon name="person" className="h-5 w-5 text-white" />
+              {panneaux.map((panneau, index) => (
+                <div key={index} className="bg-white rounded-xl border border-slate-200 p-6 space-y-4">
+                  <h4 className="font-semibold text-slate-800 text-lg">Panneau {index + 1}</h4>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        Taille Panneau {index + 1} * (Horizontal) cm
+                      </label>
+                      <input
+                        type="number"
+                        value={panneau.taille_h}
+                        onChange={(e) => updatePanneau(index, 'taille_h', e.target.value)}
+                        className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Horizontal"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">
+                        (Verticale) cm
+                      </label>
+                      <input
+                        type="number"
+                        value={panneau.taille_v}
+                        onChange={(e) => updatePanneau(index, 'taille_v', e.target.value)}
+                        className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="Verticale"
+                      />
+                    </div>
                   </div>
-                  <span>Informations Client</span>
-                </h3>
-                
-                <div className="space-y-6">
+
                   <div>
-                    <label className="block text-lg font-medium text-slate-700 mb-3">
-                      Client *
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      Contenu Panneau {index + 1} {index === 0 && '*'}
                     </label>
                     <select
-                      required
-                      value={formData.customer_id}
-                      onChange={(e) => setFormData(prev => ({ ...prev, customer_id: e.target.value }))}
-                      className="w-full bg-white border border-slate-300 rounded-xl px-4 py-4 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+                      required={index === 0}
+                      value={panneau.contenu}
+                      onChange={(e) => updatePanneau(index, 'contenu', e.target.value)}
+                      className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
-                      <option value="">Sélectionner un client</option>
-                      {customers.map(customer => (
-                        <option key={customer.customer_id} value={customer.customer_id}>
-                          {customer.company_name}
-                        </option>
+                      <option value="">Sélectionner un contenu</option>
+                      {optionsContenu.map(contenu => (
+                        <option key={contenu} value={contenu}>{contenu}</option>
                       ))}
                     </select>
                   </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-lg font-medium text-slate-700 mb-3">
-                        Priorité *
-                      </label>
-                      <select
-                        value={formData.priority}
-                        onChange={(e) => setFormData(prev => ({ ...prev, priority: e.target.value }))}
-                        className="w-full bg-white border border-slate-300 rounded-xl px-4 py-4 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
-                      >
-                        <option value="Normale">Normale</option>
-                        <option value="Urgente">Urgente</option>
-                        <option value="Prioritaire">Prioritaire</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-lg font-medium text-slate-700 mb-3">
-                        Date commande *
-                      </label>
-                      <input
-                        type="date"
-                        required
-                        value={formData.order_date}
-                        onChange={(e) => setFormData(prev => ({ ...prev, order_date: e.target.value }))}
-                        className="w-full bg-white border border-slate-300 rounded-xl px-4 py-4 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
-                      />
-                    </div>
-
-                    <div className="col-span-2">
-                      <label className="block text-lg font-medium text-slate-700 mb-3">
-                        Date livraison *
-                      </label>
-                      <input
-                        type="date"
-                        required
-                        value={formData.delivery_date}
-                        onChange={(e) => setFormData(prev => ({ ...prev, delivery_date: e.target.value }))}
-                        className="w-full bg-white border border-slate-300 rounded-xl px-4 py-4 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
-                      />
-                    </div>
-                  </div>
                 </div>
-              </div>
-
-              <div className="bg-gradient-to-br from-emerald-50 to-emerald-50/50 border border-emerald-200 rounded-2xl p-6">
-                <h3 className="text-xl font-semibold text-slate-800 mb-6 flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center">
-                    <Icon name="receipt" className="h-5 w-5 text-white" />
-                  </div>
-                  <span>Récapitulatif</span>
-                </h3>
-                
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center text-lg">
-                    <span className="text-slate-600">Sous-total:</span>
-                    <span className="font-semibold text-slate-800">{subtotal.toFixed(2)} €</span>
-                  </div>
-                  <div className="flex justify-between items-center text-lg">
-                    <span className="text-slate-600">TVA (20%):</span>
-                    <span className="font-semibold text-slate-800">{taxAmount.toFixed(2)} €</span>
-                  </div>
-                  <div className="flex justify-between items-center text-xl font-bold border-t border-slate-200 pt-4">
-                    <span className="text-slate-800">Total:</span>
-                    <span className="text-blue-600">{totalAmount.toFixed(2)} €</span>
-                  </div>
-                </div>
-              </div>
+              ))}
             </div>
+          </div>
 
-            <div className="space-y-6">
-              <div className="bg-gradient-to-br from-purple-50 to-purple-50/50 border border-purple-200 rounded-2xl p-6">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-xl font-semibold text-slate-800 flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-purple-600 rounded-xl flex items-center justify-center">
-                      <Icon name="inventory" className="h-5 w-5 text-white" />
-                    </div>
-                    <span>Articles de la commande</span>
-                  </h3>
-                  <button
-                    type="button"
-                    onClick={addOrderItem}
-                    className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-semibold py-3 px-4 rounded-xl flex items-center space-x-2 transition-all duration-200 shadow-lg shadow-purple-500/25"
-                  >
-                    <Icon name="add" className="h-5 w-5" />
-                    <span>Ajouter</span>
-                  </button>
-                </div>
-
-                <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
-                  {orderItems.map((item, index) => (
-                    <div key={index} className="bg-white rounded-xl border border-slate-200 p-6 space-y-4">
-                      <div className="flex items-center justify-between">
-                        <h4 className="font-semibold text-slate-800 text-lg">Article {index + 1}</h4>
-                        {orderItems.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => removeOrderItem(index)}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          >
-                            <Icon name="delete" className="h-5 w-5" />
-                          </button>
-                        )}
-                      </div>
-
-                      <div className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-medium text-slate-700 mb-2">
-                            Produit *
-                          </label>
-                          <select
-                            required
-                            value={item.product_id}
-                            onChange={(e) => updateOrderItem(index, 'product_id', e.target.value)}
-                            className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          >
-                            <option value="">Sélectionner un produit</option>
-                            {products.map(product => (
-                              <option key={product.product_id} value={product.product_id}>
-                                {product.product_name} - {product.unit_price.toFixed(2)} €
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-2">
-                              Quantité *
-                            </label>
-                            <input
-                              type="number"
-                              required
-                              min="1"
-                              value={item.quantity}
-                              onChange={(e) => updateOrderItem(index, 'quantity', parseInt(e.target.value) || 1)}
-                              className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            />
-                          </div>
-
-                          {item.product_id && (
-                            <div className="bg-blue-50 rounded-xl p-3">
-                              <p className="text-sm text-blue-800 font-medium">
-                                Total: {(getProductPrice(item.product_id) * item.quantity).toFixed(2)} €
-                              </p>
-                            </div>
-                          )}
-                        </div>
-
-                        <div>
-                          <label className="block text-sm font-medium text-slate-700 mb-2">
-                            Spécifications
-                          </label>
-                          <input
-                            type="text"
-                            value={item.specifications}
-                            onChange={(e) => updateOrderItem(index, 'specifications', e.target.value)}
-                            placeholder="Couleurs, dimensions, instructions spéciales..."
-                            className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+          {/* Personnalisation */}
+          <div className="bg-gradient-to-br from-emerald-50 to-emerald-50/50 border border-emerald-200 rounded-2xl p-6">
+            <h3 className="text-xl font-semibold text-slate-800 mb-6 flex items-center space-x-3">
+              <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center">
+                <Icon name="design" className="h-5 w-5 text-white" />
               </div>
+              <span>Personnalisation</span>
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-lg font-medium text-slate-700 mb-3">
+                  Avec ou sans LOGO/Nom *
+                </label>
+                <select
+                  required
+                  value={formData.avec_logo}
+                  onChange={(e) => setFormData(prev => ({ ...prev, avec_logo: e.target.value }))}
+                  className="w-full bg-white border border-slate-300 rounded-xl px-4 py-4 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+                >
+                  <option value="">Sélectionner une option</option>
+                  {optionsLogo.map(option => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-lg font-medium text-slate-700 mb-3">
+                  Support *
+                </label>
+                <select
+                  required
+                  value={formData.support}
+                  onChange={(e) => setFormData(prev => ({ ...prev, support: e.target.value }))}
+                  className="w-full bg-white border border-slate-300 rounded-xl px-4 py-4 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+                >
+                  <option value="">Sélectionner un support</option>
+                  {supports.map(support => (
+                    <option key={support} value={support}>{support}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-lg font-medium text-slate-700 mb-3">
+                  Nom de propriété * (Le nom à afficher sur le panneau)
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.nom_a_afficher}
+                  onChange={(e) => setFormData(prev => ({ ...prev, nom_a_afficher: e.target.value }))}
+                  className="w-full bg-white border border-slate-300 rounded-xl px-4 py-4 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+                  placeholder="Nom à afficher sur le panneau"
+                />
+              </div>
+
+              {formData.avec_logo === 'Avec' && (
+                <div className="md:col-span-2">
+                  <label className="block text-lg font-medium text-slate-700 mb-3">
+                    Importer Logo
+                  </label>
+                  <div className="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center">
+                    <Icon name="cloud-upload" className="h-12 w-12 text-slate-400 mx-auto mb-4" />
+                    <p className="text-slate-600 text-lg mb-2">
+                      Upload 1 supported file: audio, document, drawing, presentation, spreadsheet, or video. Max 10 MB.
+                    </p>
+                    <button
+                      type="button"
+                      className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200"
+                    >
+                      Choisir un fichier
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

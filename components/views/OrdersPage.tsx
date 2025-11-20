@@ -199,8 +199,8 @@ const OrdersPage: React.FC = () => {
                         <Icon name={statusConfig.icon} className="h-4 w-4 mr-2" />
                         {statusConfig.badge}
                       </span>
-                      <span className="font-bold text-slate-800 text-2xl">
-                        {order.total_amount.toFixed(2)} €
+                      <span className="font-semibold text-slate-800 text-lg">
+                        Commande en cours
                       </span>
                     </div>
                   </div>

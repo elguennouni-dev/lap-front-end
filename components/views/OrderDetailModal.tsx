@@ -185,8 +185,8 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ orderId, onClose })
                 {statusConfig.badge}
               </div>
               <div className="mt-2">
-                <p className="text-2xl font-bold text-slate-800">{order.total_amount.toFixed(2)} Dh</p>
-                <p className="text-sm text-slate-500">Total TTC</p>
+                <p className="text-lg font-semibold text-slate-800">Commande en cours</p>
+                <p className="text-sm text-slate-500">Statut: {statusConfig.badge}</p>
               </div>
             </div>
           </div>
@@ -271,12 +271,12 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ orderId, onClose })
                       </div>
                       <div>
                         <p className="font-semibold text-slate-800">{product?.product_name || 'Produit inconnu'}</p>
-                        <p className="text-sm text-slate-600">Quantité: {item.quantity} × {product?.unit_price.toFixed(2)} Dh</p>
+                        <p className="text-sm text-slate-600">Quantité: {item.quantity}</p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-lg font-bold text-slate-800">{item.total_price.toFixed(2)} Dh</p>
-                      <p className="text-sm text-slate-600">Total</p>
+                      <p className="text-sm font-semibold text-slate-800">Article #{index + 1}</p>
+                      <p className="text-sm text-slate-600">En traitement</p>
                     </div>
                   </div>
                 </div>
@@ -285,8 +285,8 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ orderId, onClose })
           </div>
           <div className="px-6 py-4 border-t border-slate-200 bg-slate-50">
             <div className="flex justify-between items-center">
-              <span className="text-slate-600">Total général</span>
-              <span className="text-xl font-bold text-slate-800">{order.total_amount.toFixed(2)} Dh</span>
+              <span className="text-slate-600">Total des articles</span>
+              <span className="text-lg font-semibold text-slate-800">{order.items.length}</span>
             </div>
           </div>
         </div>

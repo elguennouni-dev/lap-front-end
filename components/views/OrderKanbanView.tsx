@@ -70,7 +70,7 @@ const OrderCard: React.FC<{ order: Order; onClick: () => void; customerName: str
             <div className="space-y-2">
                 <p className="text-sm font-semibold text-slate-800 truncate">{customerName}</p>
                 <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-600 font-medium">{order.total_amount.toFixed(2)} Dh</span>
+                    <span className="text-sm text-slate-600 font-medium">Voir détails</span>
                     <Icon name="chevron-right" className="h-4 w-4 text-slate-400 group-hover:text-blue-600 transition-colors" />
                 </div>
             </div>
@@ -185,7 +185,6 @@ const OrderKanbanView: React.FC = () => {
         <div className="space-y-6">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                 <div>
-                    <h2 className="text-2xl font-bold text-slate-800">Commandes en Cours</h2>
                     <p className="text-slate-600">{orders.length} commande{orders.length !== 1 ? 's' : ''} au total</p>
                 </div>
                 

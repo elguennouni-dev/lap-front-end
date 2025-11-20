@@ -16,8 +16,7 @@ const CreateProductModal: React.FC<CreateProductModalProps> = ({ isOpen, onClose
     product_name: '',
     description: '',
     category: '',
-    unit_price: 0,
-    tx_tva: 20,
+    product_type: '',
     is_active: true,
   });
 
@@ -32,12 +31,24 @@ const CreateProductModal: React.FC<CreateProductModalProps> = ({ isOpen, onClose
     'Autre'
   ];
 
+  const productTypes = [
+    'Standard',
+    'Personnalisé',
+    'Sur mesure',
+    'Numérique',
+    'Physique'
+  ];
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     
     try {
-      const newProduct = await api.createProduct(formData);
+      const newProduct = await api.createProduct({
+        ...formData,
+        unit_price: 0,
+        tx_tva: 0
+      });
       onProductCreated(newProduct);
       onClose();
       resetForm();
@@ -54,8 +65,7 @@ const CreateProductModal: React.FC<CreateProductModalProps> = ({ isOpen, onClose
       product_name: '',
       description: '',
       category: '',
-      unit_price: 0,
-      tx_tva: 20,
+      product_type: '',
       is_active: true,
     });
   };
@@ -136,6 +146,22 @@ const CreateProductModal: React.FC<CreateProductModalProps> = ({ isOpen, onClose
                       ))}
                     </select>
                   </div>
+
+                  <div>
+                    <label className="block text-lg font-medium text-slate-700 mb-3">
+                      Type de produit
+                    </label>
+                    <select
+                      value={formData.product_type}
+                      onChange={(e) => setFormData(prev => ({ ...prev, product_type: e.target.value }))}
+                      className="w-full bg-white border border-slate-300 rounded-xl px-4 py-4 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
+                    >
+                      <option value="">Sélectionner un type</option>
+                      {productTypes.map(type => (
+                        <option key={type} value={type}>{type}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
 
@@ -166,59 +192,38 @@ const CreateProductModal: React.FC<CreateProductModalProps> = ({ isOpen, onClose
               <div className="bg-gradient-to-br from-purple-50 to-purple-50/50 border border-purple-200 rounded-2xl p-6">
                 <h3 className="text-xl font-semibold text-slate-800 mb-6 flex items-center space-x-3">
                   <div className="w-10 h-10 bg-purple-600 rounded-xl flex items-center justify-center">
-                    <Icon name="euro" className="h-5 w-5 text-white" />
+                    <Icon name="info" className="h-5 w-5 text-white" />
                   </div>
-                  <span>Prix et Taxes</span>
+                  <span>Caractéristiques</span>
                 </h3>
                 
                 <div className="space-y-6">
                   <div>
                     <label className="block text-lg font-medium text-slate-700 mb-3">
-                      Prix unitaire (€) *
+                      Spécifications techniques
                     </label>
-                    <input
-                      type="number"
-                      required
-                      min="0"
-                      step="0.01"
-                      value={formData.unit_price}
-                      onChange={(e) => setFormData(prev => ({ ...prev, unit_price: parseFloat(e.target.value) || 0 }))}
-                      className="w-full bg-white border border-slate-300 rounded-xl px-4 py-4 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
-                      placeholder="0.00"
+                    <textarea
+                      rows={4}
+                      className="w-full bg-white border border-slate-300 rounded-xl px-4 py-4 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg resize-none"
+                      placeholder="Dimensions, matériaux, finitions, délais de production..."
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-lg font-medium text-slate-700 mb-3">
-                      Taux TVA (%) *
-                    </label>
-                    <select
-                      value={formData.tx_tva}
-                      onChange={(e) => setFormData(prev => ({ ...prev, tx_tva: parseFloat(e.target.value) }))}
-                      className="w-full bg-white border border-slate-300 rounded-xl px-4 py-4 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
-                    >
-                      <option value="5.5">5.5%</option>
-                      <option value="10">10%</option>
-                      <option value="20">20%</option>
-                    </select>
-                  </div>
-
-                  {formData.unit_price > 0 && (
-                    <div className="bg-slate-50 rounded-xl p-4 space-y-2">
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-slate-600">Prix HT:</span>
-                        <span className="font-semibold text-slate-800">{formData.unit_price.toFixed(2)} €</span>
-                      </div>
-                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-slate-600">TVA ({formData.tx_tva}%):</span>
-                        <span className="font-semibold text-slate-800">{(formData.unit_price * formData.tx_tva / 100).toFixed(2)} €</span>
-                      </div>
-                      <div className="flex justify-between items-center text-base font-bold border-t border-slate-200 pt-2">
-                        <span className="text-slate-800">Prix TTC:</span>
-                        <span className="text-blue-600">{(formData.unit_price * (1 + formData.tx_tva / 100)).toFixed(2)} €</span>
-                      </div>
+                  <div className="bg-slate-50 rounded-xl p-4 space-y-3">
+                    <h4 className="font-semibold text-slate-800 text-lg">Informations produit</h4>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-slate-600">Catégorie:</span>
+                      <span className="font-semibold text-slate-800">{formData.category || 'Non définie'}</span>
                     </div>
-                  )}
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-slate-600">Type:</span>
+                      <span className="font-semibold text-slate-800">{formData.product_type || 'Standard'}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-slate-600">Statut:</span>
+                      <span className="font-semibold text-slate-800">{formData.is_active ? 'Actif' : 'Inactif'}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 

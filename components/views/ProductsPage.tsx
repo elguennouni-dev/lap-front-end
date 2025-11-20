@@ -161,7 +161,7 @@ const ProductsPage: React.FC = () => {
                 <th className="text-left p-6 font-semibold text-slate-800 text-lg">Produit</th>
                 <th className="text-left p-6 font-semibold text-slate-800 text-lg">Code</th>
                 <th className="text-left p-6 font-semibold text-slate-800 text-lg">Catégorie</th>
-                <th className="text-left p-6 font-semibold text-slate-800 text-lg">Prix Unitaire</th>
+                <th className="text-left p-6 font-semibold text-slate-800 text-lg">Type</th>
                 <th className="text-left p-6 font-semibold text-slate-800 text-lg">Statut</th>
                 <th className="text-left p-6 font-semibold text-slate-800 text-lg">Actions</th>
               </tr>
@@ -193,8 +193,8 @@ const ProductsPage: React.FC = () => {
                     </span>
                   </td>
                   <td className="p-6">
-                    <span className="font-bold text-slate-800 text-lg">
-                      {product.unit_price.toFixed(2)} €
+                    <span className="font-semibold text-slate-800 text-lg">
+                      {product.product_type || 'Standard'}
                     </span>
                   </td>
                   <td className="p-6">
