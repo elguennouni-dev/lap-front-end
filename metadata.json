@@ -1,0 +1,4 @@
+{
+  "name": "LAP Workflow Management",
+  "description": "Une application avancée de gestion des commandes et des flux de travail conçue pour rationaliser les processus, de la création de la commande à la livraison finale. Elle comprend un contrôle d'accès basé sur les rôles, un système de flux de travail séquentiel et une gestion des tâches pour différentes équipes comme le design et la production, avec notifications et authentification OTP pour les administrateurs."
+}
