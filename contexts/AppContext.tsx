@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, ReactNode, useCallback, useEffect } from 'react';
-import { User } from '../types';
+import { User, UserRole } from '../types';
 import { api } from '../services/api';
 
 interface AppContextType {
@@ -50,7 +50,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const result = await api.login(email, password);
 
       if (result.success && result.user) {
-        if (result.user.roles.includes('ADMIN')) {
+        // const isAdmin = currentUser?.roles?.includes(UserRole.ADMIN);
+        if (result.user.roles.includes(UserRole.ADMIN)) {
           setIsAwaitingOtp(true);
           localStorage.setItem('pendingEmail', email);
           return { success: true, message: result.message };

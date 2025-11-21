@@ -133,6 +133,7 @@ export interface Task {
   updated_at: string;
 }
 
+
 export interface Order {
   order_id: number;
   order_number: string;
@@ -152,4 +153,14 @@ export interface Order {
   updated_at: string;
   items: OrderItem[];
   tasks: Task[];
+
+  // new
+  commercial: string;
+  nom_propriete: string;
+  zone: string;
+  type_panneau: string;
+  avec_logo: string;
+  support: string;
+  nom_a_afficher: string;
+  panneaux: any;
 }

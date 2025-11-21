@@ -49,7 +49,8 @@ const Sidebar: React.FC<{ className?: string }> = ({ className = '' }) => {
     // { id: 'help', icon: 'help', label: 'Aide & Support' },
   ];
 
-  const isAdmin = currentUser?.role === UserRole.ADMIN;
+  // const isAdmin = currentUser?.role === UserRole.ADMIN;
+  const isAdmin = currentUser?.roles?.includes(UserRole.ADMIN);
 
   const filteredNavigationItems = navigationItems.filter(item => !item.adminOnly || isAdmin);
 
