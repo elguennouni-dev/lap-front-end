@@ -4,21 +4,12 @@ interface BaseIconProps {
   name: string;
 }
 
-/**
- * IconProps can be either:
- *  - SVG props (for svg icons)
- *  - IMG props (for image icons like logo)
- */
 type IconProps =
   | (BaseIconProps & React.SVGProps<SVGSVGElement>)
   | (BaseIconProps & React.ImgHTMLAttributes<HTMLImageElement>);
 
 export const Icon: React.FC<IconProps> = ({ name, ...props }) => {
   switch (name) {
-
-    /** -----------------------------------------------------------
-     * LOGO (IMAGE)
-     * -----------------------------------------------------------*/
     case "logo":
       return (
         <img
@@ -28,9 +19,6 @@ export const Icon: React.FC<IconProps> = ({ name, ...props }) => {
         />
       );
 
-    /** -----------------------------------------------------------
-     * LOGOUT
-     * -----------------------------------------------------------*/
     case "logout":
       return (
         <svg
@@ -48,9 +36,6 @@ export const Icon: React.FC<IconProps> = ({ name, ...props }) => {
         </svg>
       );
 
-    /** -----------------------------------------------------------
-     * USER
-     * -----------------------------------------------------------*/
     case "user":
       return (
         <svg
@@ -68,9 +53,6 @@ export const Icon: React.FC<IconProps> = ({ name, ...props }) => {
         </svg>
       );
 
-    /** -----------------------------------------------------------
-     * ORDER
-     * -----------------------------------------------------------*/
     case "order":
       return (
         <svg
@@ -88,9 +70,6 @@ export const Icon: React.FC<IconProps> = ({ name, ...props }) => {
         </svg>
       );
 
-    /** -----------------------------------------------------------
-     * NOTIFICATION
-     * -----------------------------------------------------------*/
     case "notification":
       return (
         <svg
@@ -108,9 +87,6 @@ export const Icon: React.FC<IconProps> = ({ name, ...props }) => {
         </svg>
       );
 
-    /** -----------------------------------------------------------
-     * DASHBOARD
-     * -----------------------------------------------------------*/
     case "dashboard":
       return (
         <svg
@@ -128,9 +104,6 @@ export const Icon: React.FC<IconProps> = ({ name, ...props }) => {
         </svg>
       );
 
-    /** -----------------------------------------------------------
-     * KEY
-     * -----------------------------------------------------------*/
     case "key":
       return (
         <svg
@@ -148,9 +121,6 @@ export const Icon: React.FC<IconProps> = ({ name, ...props }) => {
         </svg>
       );
 
-    /** -----------------------------------------------------------
-     * MAIL
-     * -----------------------------------------------------------*/
     case "mail":
       return (
         <svg
