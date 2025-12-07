@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useAppContext } from '../../contexts/AppContext';
 import { UserRole } from '../../types';
 import { Icon } from './Icon';
+import NotificationPanel from './NotificationPanel';
 
 const getRoleClass = (role: UserRole) => {
   switch (role) {
@@ -27,11 +28,16 @@ const getRoleDisplayName = (role: UserRole) => {
 
 const Header: React.FC = () => {
   const { currentUser, logout } = useAppContext();
+  const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const notificationRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+        setShowNotifications(false);
+      }
       if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
         setShowUserMenu(false);
       }
@@ -52,15 +58,45 @@ const Header: React.FC = () => {
   return (
     <header className="bg-white shadow-sm border-b border-slate-200 px-6 py-4 flex-shrink-0 z-30 relative">
       <div className="flex items-center justify-between w-full">
-        {/* Spacer to push content to the right */}
+        {/* Spacer */}
         <div className="flex-1"></div>
 
         <div className="flex items-center space-x-4">
           
+          {/* Notifications */}
+          <div className="relative" ref={notificationRef}>
+            <button
+              onClick={() => {
+                setShowNotifications(!showNotifications);
+                setShowUserMenu(false);
+              }}
+              className={`relative p-2 rounded-xl transition-all duration-200 ${showNotifications
+                ? 'bg-blue-100 text-blue-600'
+                : 'text-slate-600 hover:text-slate-800 hover:bg-slate-100'
+              }`}
+              aria-label="Notifications"
+            >
+              <Icon name="notification" className="h-6 w-6" />
+              <span className="absolute top-2 right-2 flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500 border-2 border-white"></span>
+              </span>
+            </button>
+
+            {showNotifications && (
+              <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 shadow-2xl rounded-2xl ring-1 ring-black ring-opacity-5 overflow-hidden">
+                <NotificationPanel />
+              </div>
+            )}
+          </div>
+
           {/* User Menu */}
           <div className="relative" ref={userMenuRef}>
             <button
-              onClick={() => setShowUserMenu(!showUserMenu)}
+              onClick={() => {
+                setShowUserMenu(!showUserMenu);
+                setShowNotifications(false);
+              }}
               className="flex items-center space-x-3 p-2 rounded-xl hover:bg-slate-50 transition-colors duration-200 group"
             >
               <div className="text-right hidden md:block">
