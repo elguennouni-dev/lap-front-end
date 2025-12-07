@@ -9,13 +9,12 @@ export interface FileAttachment {
   uploaded_at: string;
 }
 
-
-
 export enum UserRole {
   ADMIN = 'ADMIN',
   DESIGNER = 'DESIGNER',
   COMMERCIAL = 'COMMERCIAL',
   IMPRIMEUR = 'IMPRIMEUR',
+  LOGISTIQUE = 'LOGISTIQUE',
 }
 
 export enum OrderStatus {
@@ -33,11 +32,11 @@ export enum OrderStatus {
 }
 
 export enum TaskStatus {
-    PENDING = 'En attente',
-    ACCEPTED = 'Acceptée',
-    IN_PROGRESS = 'En cours',
-    COMPLETED = 'Terminée',
-    REJECTED = 'Rejetée'
+  PENDING = 'En attente',
+  ACCEPTED = 'Acceptée',
+  IN_PROGRESS = 'En cours',
+  COMPLETED = 'Terminée',
+  REJECTED = 'Rejetée'
 }
 
 export interface User {
@@ -87,6 +86,13 @@ export interface Product {
   updated_at?: string;
 }
 
+export interface PanneauConfig {
+  id?: number | string;
+  taille_h: string;
+  taille_v: string;
+  contenu: string | string[];
+}
+
 export interface OrderItem {
   order_item_id: number;
   order_id: number;
@@ -95,25 +101,9 @@ export interface OrderItem {
   unit_price: number;
   total_price: number;
   specifications?: string;
+  panneaux?: PanneauConfig[]; 
   created_at?: string;
 }
-
-// export interface Task {
-//   task_id: number;
-//   order_id: number;
-//   step_id: number;
-//   step_name: string;
-//   assigned_to: number;
-//   assigned_by: number;
-//   status: TaskStatus;
-//   start_date?: string | null;
-//   end_date?: string | null;
-//   estimated_hours?: number;
-//   real_hours?: number | null;
-//   comments?: string;
-//   created_at: string;
-//   updated_at: string;
-// }
 
 export interface Task {
   task_id: number;
@@ -133,7 +123,6 @@ export interface Task {
   updated_at: string;
 }
 
-
 export interface Order {
   order_id: number;
   order_number: string;
@@ -141,7 +130,7 @@ export interface Order {
   status: OrderStatus;
   priority: string;
   order_date: string;
-  delivery_date: string;
+  // delivery_date removed
   subtotal_amount: number;
   tax_amount: number;
   total_amount: number;
@@ -154,7 +143,7 @@ export interface Order {
   items: OrderItem[];
   tasks: Task[];
 
-  // new
+  // Custom Fields
   commercial: string;
   nom_propriete: string;
   zone: string;
@@ -162,5 +151,5 @@ export interface Order {
   avec_logo: string;
   support: string;
   nom_a_afficher: string;
-  panneaux: any;
+  panneaux: PanneauConfig[];
 }

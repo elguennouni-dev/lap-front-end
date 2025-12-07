@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { User, UserRole } from '../../types';
 import { api } from '../../services/api';
 import { useAppContext } from '../../contexts/AppContext';
@@ -12,20 +12,24 @@ const UsersPage: React.FC = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // Check if current user is Admin
+  const isAdmin = currentUser?.roles.includes(UserRole.ADMIN);
+
   const getRoleColor = (role: UserRole) => {
     const colors = {
       [UserRole.ADMIN]: 'bg-red-100 text-red-700 border-red-200',
       [UserRole.COMMERCIAL]: 'bg-blue-100 text-blue-700 border-blue-200',
       [UserRole.DESIGNER]: 'bg-purple-100 text-purple-700 border-purple-200',
       [UserRole.IMPRIMEUR]: 'bg-green-100 text-green-700 border-green-200',
+      [UserRole.LOGISTIQUE]: 'bg-orange-100 text-orange-700 border-orange-200',
     };
     return colors[role] || 'bg-gray-100 text-gray-700 border-gray-200';
   };
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         user.email.toLowerCase().includes(searchTerm.toLowerCase());
+                          user.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          user.email.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesRole = selectedRole === 'ALL' || user.roles.includes(selectedRole);
     return matchesSearch && matchesRole;
   });
@@ -55,13 +59,17 @@ const UsersPage: React.FC = () => {
           <h1 className="text-3xl font-bold text-slate-800">Utilisateurs</h1>
           <p className="text-slate-600 text-lg">Gestion des utilisateurs et permissions</p>
         </div>
-        <button 
-          onClick={() => setShowCreateModal(true)}
-          className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-3 px-6 rounded-xl flex items-center space-x-3 shadow-lg shadow-blue-500/25 transition-all duration-200"
-        >
-          <Icon name="add" className="h-5 w-5" />
-          <span className="text-lg">Nouvel Utilisateur</span>
-        </button>
+        
+        {/* Only Admin can add new users */}
+        {isAdmin && (
+          <button 
+            onClick={() => setShowCreateModal(true)}
+            className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-3 px-6 rounded-xl flex items-center space-x-3 shadow-lg shadow-blue-500/25 transition-all duration-200"
+          >
+            <Icon name="add" className="h-5 w-5" />
+            <span className="text-lg">Nouvel Utilisateur</span>
+          </button>
+        )}
       </div>
 
       {/* Stats and Filters Section */}
@@ -122,6 +130,7 @@ const UsersPage: React.FC = () => {
               <option value={UserRole.COMMERCIAL}>Commercial</option>
               <option value={UserRole.DESIGNER}>Designer</option>
               <option value={UserRole.IMPRIMEUR}>Imprimeur</option>
+              <option value={UserRole.LOGISTIQUE}>Logistique</option>
             </select>
           </div>
         </div>
@@ -137,6 +146,7 @@ const UsersPage: React.FC = () => {
               { role: UserRole.COMMERCIAL, label: 'Commerciaux', count: users.filter(u => u.roles.includes(UserRole.COMMERCIAL)).length },
               { role: UserRole.DESIGNER, label: 'Designers', count: users.filter(u => u.roles.includes(UserRole.DESIGNER)).length },
               { role: UserRole.IMPRIMEUR, label: 'Imprimeurs', count: users.filter(u => u.roles.includes(UserRole.IMPRIMEUR)).length },
+              { role: UserRole.LOGISTIQUE, label: 'Logistique', count: users.filter(u => u.roles.includes(UserRole.LOGISTIQUE)).length },
             ].map(item => (
               <div key={item.role} className="flex items-center justify-between p-2">
                 <span className="text-sm text-slate-700">{item.label}</span>
@@ -219,16 +229,16 @@ const UsersPage: React.FC = () => {
                   </td>
                   <td className="p-6">
                     <div className="flex items-center space-x-2">
-                      <button className="p-2 text-blue-600 hover:bg-blue-50 rounded-xl transition-colors">
-                        <Icon name="edit" className="h-5 w-5" />
-                      </button>
-                      <button 
-                        onClick={() => handleDeleteUser(user.user_id)}
-                        disabled={loading}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-xl transition-colors disabled:opacity-50"
-                      >
-                        <Icon name="delete" className="h-5 w-5" />
-                      </button>
+                      {isAdmin && (
+                        <button 
+                          onClick={() => handleDeleteUser(user.user_id)}
+                          disabled={loading}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-xl transition-colors disabled:opacity-50"
+                          title="Supprimer l'utilisateur"
+                        >
+                          <Icon name="delete" className="h-5 w-5" />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -249,13 +259,15 @@ const UsersPage: React.FC = () => {
                 : "Commencez par ajouter votre premier utilisateur."
               }
             </p>
-            <button 
-              onClick={() => setShowCreateModal(true)}
-              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-3 px-8 rounded-xl inline-flex items-center space-x-3 shadow-lg shadow-blue-500/25 transition-all duration-200"
-            >
-              <Icon name="add" className="h-5 w-5" />
-              <span>Ajouter un Utilisateur</span>
-            </button>
+            {isAdmin && (
+              <button 
+                onClick={() => setShowCreateModal(true)}
+                className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-3 px-8 rounded-xl inline-flex items-center space-x-3 shadow-lg shadow-blue-500/25 transition-all duration-200"
+              >
+                <Icon name="add" className="h-5 w-5" />
+                <span>Ajouter un Utilisateur</span>
+              </button>
+            )}
           </div>
         )}
       </div>

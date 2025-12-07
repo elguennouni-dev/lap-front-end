@@ -37,7 +37,30 @@ const OrdersPage: React.FC = () => {
     }
   };
 
-  const filteredOrders = orders.filter(order => {
+  const getAccessibleOrders = () => {
+    if (!currentUser) return [];
+    
+    if (currentUser.roles.includes(UserRole.ADMIN)) {
+      return orders;
+    }
+
+    return orders.filter(order => {
+      if (currentUser.roles.includes(UserRole.COMMERCIAL)) {
+        return order.created_by === currentUser.user_id;
+      }
+      if (currentUser.roles.includes(UserRole.DESIGNER)) {
+        return order.assigned_designer_id === currentUser.user_id;
+      }
+      if (currentUser.roles.includes(UserRole.IMPRIMEUR)) {
+        return order.assigned_imprimeur_id === currentUser.user_id;
+      }
+      return false;
+    });
+  };
+
+  const accessibleOrders = getAccessibleOrders();
+
+  const filteredOrders = accessibleOrders.filter(order => {
     const matchesStatus = filterStatus === 'ALL' || order.status === filterStatus;
     const matchesSearch = searchTerm === '' || 
       order.order_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -205,7 +228,7 @@ const OrdersPage: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-base mb-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-base mb-6">
                     <div className="flex items-center space-x-3">
                       <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center">
                         <Icon name="calendar" className="h-5 w-5 text-blue-600" />
@@ -214,17 +237,6 @@ const OrdersPage: React.FC = () => {
                         <span className="text-slate-600 block text-sm">Date commande</span>
                         <p className="text-slate-800 font-medium">
                           {new Date(order.order_date).toLocaleDateString('fr-FR')}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-green-50 rounded-xl flex items-center justify-center">
-                        <Icon name="delivery" className="h-5 w-5 text-green-600" />
-                      </div>
-                      <div>
-                        <span className="text-slate-600 block text-sm">Date livraison</span>
-                        <p className="text-slate-800 font-medium">
-                          {new Date(order.delivery_date).toLocaleDateString('fr-FR')}
                         </p>
                       </div>
                     </div>
@@ -256,7 +268,7 @@ const OrdersPage: React.FC = () => {
         </div>
 
         <div className="space-y-6">
-          <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-6 text-white">
+          <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-6 text-white sticky top-6">
             <div className="flex items-center space-x-3 mb-4">
               <div className="p-2 bg-white/20 rounded-xl">
                 <Icon name="analytics" className="h-6 w-6" />
@@ -265,58 +277,24 @@ const OrdersPage: React.FC = () => {
             </div>
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <span className="text-blue-100">Total commandes</span>
-                <span className="text-xl font-bold">{orders.length}</span>
+                <span className="text-blue-100">Vos commandes</span>
+                <span className="text-xl font-bold">{accessibleOrders.length}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-blue-100">En attente</span>
                 <span className="text-xl font-bold">
-                  {orders.filter(o => o.status === OrderStatus.DESIGN_PENDING_APPROVAL).length}
+                  {accessibleOrders.filter(o => o.status === OrderStatus.DESIGN_PENDING_APPROVAL).length}
                 </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-blue-100">En cours</span>
                 <span className="text-xl font-bold">
-                  {orders.filter(o => 
+                  {accessibleOrders.filter(o => 
                     o.status === OrderStatus.DESIGN_IN_PROGRESS || 
                     o.status === OrderStatus.PRODUCTION_IN_PROGRESS
                   ).length}
                 </span>
               </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-2xl border border-slate-200 p-6">
-            <h3 className="font-semibold text-slate-800 mb-4 flex items-center space-x-2">
-              <Icon name="filter-list" className="h-5 w-5 text-slate-600" />
-              <span>Statuts rapides</span>
-            </h3>
-            <div className="space-y-2">
-              {[
-                { status: 'ALL' as const, label: 'Toutes', count: orders.length },
-                { status: OrderStatus.NEW_ORDER, label: 'Nouvelles', count: orders.filter(o => o.status === OrderStatus.NEW_ORDER).length },
-                { status: OrderStatus.DESIGN_PENDING_APPROVAL, label: 'En attente', count: orders.filter(o => o.status === OrderStatus.DESIGN_PENDING_APPROVAL).length },
-                { status: OrderStatus.COMPLETED, label: 'Terminées', count: orders.filter(o => o.status === OrderStatus.COMPLETED).length },
-              ].map(item => (
-                <button
-                  key={item.status}
-                  onClick={() => setFilterStatus(item.status)}
-                  className={`w-full flex items-center justify-between p-3 rounded-xl transition-all duration-200 ${
-                    filterStatus === item.status 
-                      ? 'bg-blue-50 text-blue-600 border border-blue-200' 
-                      : 'hover:bg-slate-50 text-slate-700'
-                  }`}
-                >
-                  <span className="font-medium">{item.label}</span>
-                  <span className={`px-2 py-1 rounded-full text-sm ${
-                    filterStatus === item.status 
-                      ? 'bg-blue-100 text-blue-600' 
-                      : 'bg-slate-100 text-slate-600'
-                  }`}>
-                    {item.count}
-                  </span>
-                </button>
-              ))}
             </div>
           </div>
         </div>
@@ -331,7 +309,7 @@ const OrdersPage: React.FC = () => {
           <p className="text-slate-600 text-lg max-w-md mx-auto mb-6">
             {searchTerm || filterStatus !== 'ALL' 
               ? "Aucune commande ne correspond à vos critères de recherche."
-              : "Commencez par créer votre première commande pour votre entreprise."
+              : "Aucune commande associée à votre compte pour le moment."
             }
           </p>
           {canCreateOrder && (

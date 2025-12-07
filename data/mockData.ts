@@ -91,6 +91,21 @@ export const MOCK_USERS: User[] = [
     created_at: '2024-01-01T00:00:00Z',
     updated_at: '2024-03-15T07:30:00Z'
   },
+  { 
+    user_id: 7, 
+    username: 'logistique1', 
+    email: 'logistique@lapsystem.ma', 
+    password_hash: 'hashed_password_123',
+    first_name: 'Karim', 
+    last_name: 'Tazi', 
+    phone: '+212 6 00 00 00 07',
+    avatar_url: null,
+    roles: [UserRole.LOGISTIQUE], 
+    is_active: true,
+    last_login: '2024-03-15T08:00:00Z',
+    created_at: '2024-01-01T00:00:00Z',
+    updated_at: '2024-03-15T08:00:00Z'
+  },
 ];
 
 export const MOCK_CUSTOMERS: Customer[] = [
@@ -306,6 +321,7 @@ const generateItems = (productId: number, quantity: number): OrderItem => {
         unit_price: product.unit_price,
         total_price: product.unit_price * quantity,
         specifications: '',
+        panneaux: [],
         created_at: new Date().toISOString()
     }
 };
@@ -321,7 +337,6 @@ const generateTask = (taskId: number, orderId: number, stepName: string, assigne
     status: status,
     start_date: status !== TaskStatus.PENDING ? new Date().toISOString() : null,
     end_date: status === TaskStatus.COMPLETED ? new Date().toISOString() : null,
-    estimated_hours: stepName === 'Design' ? 8 : 16,
     real_hours: status === TaskStatus.COMPLETED ? (stepName === 'Design' ? 6 : 14) : null,
     comments: '',
     created_at: new Date().toISOString(),
@@ -337,7 +352,6 @@ export const MOCK_ORDERS: Order[] = [
         status: OrderStatus.NEW_ORDER,
         priority: 'Normale',
         order_date: '2024-02-12T10:00:00Z',
-        delivery_date: '2024-02-20T10:00:00Z',
         subtotal_amount: 370,
         tax_amount: 74,
         total_amount: 444,
@@ -348,7 +362,16 @@ export const MOCK_ORDERS: Order[] = [
         created_at: '2024-02-12T10:00:00Z',
         updated_at: '2024-02-12T10:00:00Z',
         items: [generateItems(1, 1), generateItems(2, 1)],
-        tasks: []
+        tasks: [],
+        // New fields
+        commercial: 'Salma Ouassini',
+        nom_propriete: 'Résidence Al Manar',
+        zone: 'R2',
+        type_panneau: 'Panneau',
+        avec_logo: 'Avec',
+        support: 'Bois',
+        nom_a_afficher: 'Al Baraka Market',
+        panneaux: [{ id: 1, taille_h: '200', taille_v: '100', contenu: ['Millenium', 'Galaxy'] }]
     },
     {
         order_id: 2,
@@ -357,7 +380,6 @@ export const MOCK_ORDERS: Order[] = [
         status: OrderStatus.DESIGN_ASSIGNED,
         priority: 'Urgente',
         order_date: '2024-02-10T11:00:00Z',
-        delivery_date: '2024-02-18T10:00:00Z',
         subtotal_amount: 300,
         tax_amount: 60,
         total_amount: 360,
@@ -368,7 +390,16 @@ export const MOCK_ORDERS: Order[] = [
         created_at: '2024-02-10T11:00:00Z',
         updated_at: '2024-02-10T11:00:00Z',
         items: [generateItems(3, 1)],
-        tasks: [generateTask(1, 2, 'Design', 3, 1, TaskStatus.PENDING)]
+        tasks: [generateTask(1, 2, 'Design', 3, 1, TaskStatus.PENDING)],
+        // New fields
+        commercial: 'Salma Ouassini',
+        nom_propriete: 'TechPlus HQ',
+        zone: 'R1',
+        type_panneau: 'Oneway',
+        avec_logo: 'Avec',
+        support: 'Forex',
+        nom_a_afficher: 'TechPlus Rabat',
+        panneaux: [{ id: 2, taille_h: '150', taille_v: '150', contenu: ['Azur'] }]
     },
     {
         order_id: 3,
@@ -377,7 +408,6 @@ export const MOCK_ORDERS: Order[] = [
         status: OrderStatus.DESIGN_PENDING_APPROVAL,
         priority: 'Normale',
         order_date: '2024-02-09T12:00:00Z',
-        delivery_date: '2024-02-17T10:00:00Z',
         subtotal_amount: 240,
         tax_amount: 48,
         total_amount: 288,
@@ -388,7 +418,16 @@ export const MOCK_ORDERS: Order[] = [
         created_at: '2024-02-09T12:00:00Z',
         updated_at: '2024-02-09T12:00:00Z',
         items: [generateItems(1, 2)],
-        tasks: [generateTask(2, 3, 'Design', 4, 1, TaskStatus.COMPLETED)]
+        tasks: [generateTask(2, 3, 'Design', 4, 1, TaskStatus.COMPLETED)],
+        // New fields
+        commercial: 'Salma Ouassini',
+        nom_propriete: 'Annexe 2',
+        zone: 'R3',
+        type_panneau: 'Panneau',
+        avec_logo: 'Sans',
+        support: 'Bois',
+        nom_a_afficher: 'Direction',
+        panneaux: []
     },
     {
         order_id: 4,
@@ -397,7 +436,6 @@ export const MOCK_ORDERS: Order[] = [
         status: OrderStatus.DESIGN_APPROVED,
         priority: 'Prioritaire',
         order_date: '2024-02-08T14:00:00Z',
-        delivery_date: '2024-02-15T10:00:00Z',
         subtotal_amount: 500,
         tax_amount: 100,
         total_amount: 600,
@@ -408,7 +446,16 @@ export const MOCK_ORDERS: Order[] = [
         created_at: '2024-02-08T14:00:00Z',
         updated_at: '2024-02-08T14:00:00Z',
         items: [generateItems(2, 2)],
-        tasks: [generateTask(3, 4, 'Design', 3, 1, TaskStatus.COMPLETED)]
+        tasks: [generateTask(3, 4, 'Design', 3, 1, TaskStatus.COMPLETED)],
+        // New fields
+        commercial: 'Salma Ouassini',
+        nom_propriete: 'Showroom',
+        zone: 'R5',
+        type_panneau: 'Oneway',
+        avec_logo: 'Avec',
+        support: 'Forex',
+        nom_a_afficher: 'Promo Hiver',
+        panneaux: [{ id: 3, taille_h: '300', taille_v: '100', contenu: ['Lumi-lap', 'Platinium'] }]
     },
     {
         order_id: 5,
@@ -417,7 +464,6 @@ export const MOCK_ORDERS: Order[] = [
         status: OrderStatus.PRODUCTION_COMPLETE,
         priority: 'Normale',
         order_date: '2024-02-06T15:00:00Z',
-        delivery_date: '2024-02-14T10:00:00Z',
         subtotal_amount: 900,
         tax_amount: 180,
         total_amount: 1080,
@@ -431,7 +477,16 @@ export const MOCK_ORDERS: Order[] = [
         tasks: [
             generateTask(4, 5, 'Design', 4, 1, TaskStatus.COMPLETED),
             generateTask(5, 5, 'Production', 5, 1, TaskStatus.COMPLETED)
-        ]
+        ],
+        // New fields
+        commercial: 'Salma Ouassini',
+        nom_propriete: 'Entrée Principale',
+        zone: 'R0',
+        type_panneau: 'Panneau',
+        avec_logo: 'Avec',
+        support: 'Bois',
+        nom_a_afficher: 'Bienvenue',
+        panneaux: [{ id: 4, taille_h: '100', taille_v: '200', contenu: ['Millenium'] }]
     },
     {
         order_id: 6,
@@ -440,7 +495,6 @@ export const MOCK_ORDERS: Order[] = [
         status: OrderStatus.COMPLETED,
         priority: 'Urgente',
         order_date: '2024-02-01T16:00:00Z',
-        delivery_date: '2024-02-10T10:00:00Z',
         subtotal_amount: 120,
         tax_amount: 24,
         total_amount: 144,
@@ -454,6 +508,15 @@ export const MOCK_ORDERS: Order[] = [
         tasks: [
             generateTask(6, 6, 'Design', 3, 1, TaskStatus.COMPLETED),
             generateTask(7, 6, 'Production', 6, 1, TaskStatus.COMPLETED)
-        ]
+        ],
+        // New fields
+        commercial: 'Salma Ouassini',
+        nom_propriete: 'Bureau 12',
+        zone: 'R6',
+        type_panneau: 'Oneway',
+        avec_logo: 'Sans',
+        support: 'Forex',
+        nom_a_afficher: 'Privé',
+        panneaux: []
     }
 ];

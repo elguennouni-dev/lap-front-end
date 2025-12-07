@@ -3,136 +3,147 @@ import { useAppContext } from '../../contexts/AppContext';
 import { Icon } from '../common/Icon';
 
 const OtpScreen: React.FC = () => {
-    const { verifyOtp, resendOtp, isAwaitingOtp } = useAppContext();
+  const { verifyOtp, resendOtp, isAwaitingOtp } = useAppContext();
 
-    const [otp, setOtp] = useState<string[]>(Array(6).fill(''));
-    const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false);
-    const [resendCooldown, setResendCooldown] = useState(0);
-    const [email, setEmail] = useState('');
-    const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const [otp, setOtp] = useState<string[]>(Array(6).fill(''));
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [email, setEmail] = useState('');
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-    useEffect(() => {
-        // Get email from localStorage or session
-        const storedEmail = localStorage.getItem('pendingEmail') || '';
-        setEmail(storedEmail);
-        inputRefs.current[0]?.focus();
-        setError('');
-        setOtp(Array(6).fill(''));
-    }, []);
+  useEffect(() => {
+    const storedEmail = localStorage.getItem('pendingEmail') || '';
+    setEmail(storedEmail);
+    // Autofocus first input on mount
+    setTimeout(() => inputRefs.current[0]?.focus(), 100);
+    setError('');
+    setOtp(Array(6).fill(''));
+  }, []);
 
-    useEffect(() => {
-        if (resendCooldown > 0) {
-            const t = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
-            return () => clearTimeout(t);
-        }
-    }, [resendCooldown]);
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (resendCooldown > 0) {
+      timer = setTimeout(() => setResendCooldown(resendCooldown - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [resendCooldown]);
 
-    const handleInput = (index: number, value: string) => {
-        if (!/^\d?$/.test(value)) return;
+  const handleInput = (index: number, value: string) => {
+    // Only allow digits
+    if (!/^\d?$/.test(value)) return;
 
-        const updated = [...otp];
-        updated[index] = value;
-        setOtp(updated);
-        setError('');
+    const updated = [...otp];
+    updated[index] = value;
+    setOtp(updated);
+    setError('');
 
-        if (value && index < 5) inputRefs.current[index + 1]?.focus();
-    };
+    // Move to next input if value is entered
+    if (value && index < 5) {
+      inputRefs.current[index + 1]?.focus();
+    }
+  };
 
-    const handleKey = (index: number, e: React.KeyboardEvent) => {
-        if (e.key === "Backspace" && !otp[index] && index > 0) {
-            inputRefs.current[index - 1]?.focus();
-        }
-    };
+  const handleKey = (index: number, e: React.KeyboardEvent) => {
+    // Move to previous input on Backspace if current is empty
+    if (e.key === "Backspace" && !otp[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
 
-    const pasteOtp = (e: React.ClipboardEvent) => {
-        e.preventDefault();
-        const text = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+  const pasteOtp = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const text = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
+    
+    if (!text) return;
 
-        const arr = Array(6).fill('');
-        text.split('').forEach((n, i) => arr[i] = n);
+    const arr = Array(6).fill('');
+    text.split('').forEach((n, i) => arr[i] = n);
+    setOtp(arr);
 
-        setOtp(arr);
+    // Focus appropriate input after paste
+    const nextEmptyIndex = arr.findIndex(val => val === '');
+    const focusIndex = nextEmptyIndex === -1 ? 5 : nextEmptyIndex;
+    inputRefs.current[focusIndex]?.focus();
+  };
 
-        const next = arr.indexOf('');
-        inputRefs.current[next === -1 ? 5 : next]?.focus();
-    };
+  const verify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const otpString = otp.join('');
 
-    const verify = async (e: React.FormEvent) => {
-        e.preventDefault();
-        const otpString = otp.join('');
-
-        if (otpString.length !== 6) {
-            setError("Veuillez entrer les 6 chiffres");
-            return;
-        }
-
-        if (!email) {
-            setError("Erreur: email non disponible. Veuillez vous reconnecter.");
-            return;
-        }
-
-        setLoading(true);
-        const result = await verifyOtp(email, otpString);
-
-        if (!result.success) {
-            setError(result.message || "Code invalide - Utilisez 123456");
-            setOtp(Array(6).fill(''));
-            inputRefs.current[0]?.focus();
-        }
-
-        setLoading(false);
-    };
-
-    const resend = async () => {
-        if (resendCooldown > 0 || !email) return;
-
-        setResendCooldown(30);
-        setOtp(Array(6).fill(''));
-        inputRefs.current[0]?.focus();
-        setError('');
-
-        await resendOtp(email);
-    };
-
-    const fillWith123456 = () => {
-        setOtp(['1', '2', '3', '4', '5', '6']);
-        inputRefs.current[5]?.focus();
-    };
-
-    const maskedEmail = email
-        ? email.replace(/(.{2})(.*)(?=@)/, (_, a, b) => a + '*'.repeat(b.length))
-        : "votre email";
-
-    // If not awaiting OTP, don't show this component
-    if (!isAwaitingOtp) {
-        return null;
+    if (otpString.length !== 6) {
+      setError("Veuillez entrer les 6 chiffres");
+      return;
     }
 
-    return (
-        <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 p-4">
-            <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-2xl shadow-xl border border-slate-200">
+    if (!email) {
+      setError("Erreur: email non disponible. Veuillez vous reconnecter.");
+      return;
+    }
 
-                {/* Header */}
-                <div className="text-center space-y-2">
-                    <div className="flex justify-center">
-                        <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl flex items-center justify-center">
-                            <Icon name="lock" className="h-8 w-8 text-white" />
-                        </div>
+    setLoading(true);
+    // Simulate slight network delay for better UX
+    // await new Promise(r => setTimeout(r, 600));
+
+    const result = await verifyOtp(email, otpString);
+
+    if (!result.success) {
+      setError(result.message || "Code invalide");
+      // Clear OTP on error? Optional. Usually better to keep it so user can edit.
+      // setOtp(Array(6).fill('')); 
+      // inputRefs.current[0]?.focus();
+    }
+    setLoading(false);
+  };
+
+  const resend = async () => {
+    if (resendCooldown > 0 || !email) return;
+
+    setResendCooldown(30);
+    setOtp(Array(6).fill(''));
+    inputRefs.current[0]?.focus();
+    setError('');
+
+    await resendOtp(email);
+  };
+
+  const fillWithDemoCode = () => {
+    setOtp(['1', '2', '3', '4', '5', '6']);
+    inputRefs.current[5]?.focus();
+  };
+
+  const maskedEmail = email
+    ? email.replace(/(.{2})(.*)(?=@)/, (_, a, b) => a + '*'.repeat(b.length))
+    : "votre email";
+
+  if (!isAwaitingOtp) return null;
+
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-slate-50 relative overflow-hidden">
+        {/* Background Decor */}
+        <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
+            <div className="absolute top-[10%] left-[10%] w-[40%] h-[40%] rounded-full bg-blue-100/40 blur-3xl"></div>
+            <div className="absolute bottom-[10%] right-[10%] w-[40%] h-[40%] rounded-full bg-purple-100/40 blur-3xl"></div>
+        </div>
+
+        <div className="w-full max-w-md p-8 bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/50 z-10 relative">
+            
+            {/* Header */}
+            <div className="text-center mb-8">
+                <div className="flex justify-center mb-6">
+                    <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center shadow-inner">
+                        <Icon name="lock" className="h-8 w-8 text-blue-600" />
                     </div>
-                    <h2 className="text-2xl font-bold text-slate-800">Vérification en deux étapes</h2>
-                    <p className="text-slate-600 text-sm">Code envoyé à :</p>
-                    <p className="text-slate-800 font-medium">{maskedEmail}</p>
-                    <p className="text-sm text-blue-600 font-medium">Utilisez le code: <strong>123456</strong></p>
                 </div>
+                <h2 className="text-2xl font-bold text-slate-800 mb-2">Vérification requise</h2>
+                <p className="text-slate-500 text-sm mb-1">Un code a été envoyé à</p>
+                <p className="text-slate-800 font-semibold">{maskedEmail}</p>
+            </div>
 
-                {/* Form */}
-                <form className="space-y-6" onSubmit={verify}>
-                    <label className="text-sm font-medium text-slate-700 text-center block">
-                        Code de vérification
-                    </label>
-
-                    <div className="flex justify-center space-x-3" onPaste={pasteOtp}>
+            {/* Form */}
+            <form onSubmit={verify} className="space-y-8">
+                <div className="space-y-4">
+                    <div className="flex justify-between gap-2" onPaste={pasteOtp}>
                         {otp.map((digit, i) => (
                             <input
                                 key={i}
@@ -143,77 +154,78 @@ const OtpScreen: React.FC = () => {
                                 inputMode="numeric"
                                 onChange={(e) => handleInput(i, e.target.value)}
                                 onKeyDown={(e) => handleKey(i, e)}
-                                className="w-12 h-12 text-center text-xl font-bold border-2 border-slate-300 rounded-xl
-                                focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition"
                                 disabled={loading}
+                                className={`w-12 h-14 text-center text-2xl font-bold rounded-xl border-2 bg-slate-50 transition-all duration-200 outline-none
+                                    ${digit ? 'border-blue-500 text-slate-800 bg-white shadow-sm' : 'border-slate-200 text-slate-400'}
+                                    focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 focus:bg-white focus:scale-105
+                                    disabled:opacity-50 disabled:cursor-not-allowed`}
                             />
                         ))}
                     </div>
 
-                    <div className="text-center">
+                    <div className="flex justify-center">
                         <button
                             type="button"
-                            onClick={fillWith123456}
-                            className="text-blue-600 hover:text-blue-800 font-medium text-sm flex items-center justify-center space-x-2 mx-auto"
+                            onClick={fillWithDemoCode}
+                            className="text-xs text-blue-600/70 hover:text-blue-700 font-medium flex items-center gap-1 transition-colors"
                         >
-                            <Icon name="auto-fill" className="h-4 w-4" />
-                            <span>Remplir avec 123456</span>
+                            <Icon name="auto-fill" className="h-3 w-3" />
+                            <span>Demo: 123456</span>
                         </button>
                     </div>
+                </div>
 
-                    {error && (
-                        <div className="flex items-center justify-center space-x-2 text-red-600 text-sm bg-red-50 border border-red-200 rounded-xl py-3">
-                            <Icon name="error" className="h-4 w-4" />
-                            <span>{error}</span>
-                        </div>
-                    )}
+                {error && (
+                    <div className="flex items-center justify-center space-x-2 text-red-600 text-sm bg-red-50 border border-red-100 rounded-xl py-3 animate-shake">
+                        <Icon name="error" className="h-4 w-4 flex-shrink-0" />
+                        <span className="font-medium">{error}</span>
+                    </div>
+                )}
 
-                    <button
-                        type="submit"
-                        disabled={loading || otp.includes('')}
-                        className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white
-                        font-semibold py-4 rounded-xl flex items-center justify-center space-x-2 shadow-lg disabled:opacity-50"
-                    >
-                        {loading ? (
-                            <>
-                                <div className="animate-spin h-5 w-5 border-b-2 border-white rounded-full"></div>
-                                <span>Vérification...</span>
-                            </>
-                        ) : (
-                            <>
-                                <Icon name="verified" className="h-5 w-5" />
-                                <span>Vérifier le code</span>
-                            </>
-                        )}
-                    </button>
-                </form>
-
-                {/* Resend */}
-                <div className="text-center space-y-2">
-                    {resendCooldown > 0 ? (
-                        <p className="text-sm text-slate-600">
-                            Vous pourrez renvoyer un code dans <b>{resendCooldown}s</b>
-                        </p>
+                <button
+                    type="submit"
+                    disabled={loading || otp.join('').length !== 6}
+                    className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-500/30 hover:shadow-blue-500/40 transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center space-x-2 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
+                >
+                    {loading ? (
+                        <>
+                            <div className="animate-spin h-5 w-5 border-2 border-white/30 border-t-white rounded-full"></div>
+                            <span>Vérification...</span>
+                        </>
                     ) : (
-                        <p className="text-sm text-slate-600">Code non reçu ?</p>
+                        <>
+                            <span>Vérifier le code</span>
+                            <Icon name="check" className="h-5 w-5" />
+                        </>
                     )}
+                </button>
+            </form>
 
+            {/* Footer / Resend */}
+            <div className="mt-8 text-center pt-6 border-t border-slate-100">
+                <p className="text-sm text-slate-500 mb-3">
+                    Vous n'avez pas reçu le code ?
+                </p>
+                
+                {resendCooldown > 0 ? (
+                    <div className="flex items-center justify-center space-x-2 text-slate-400 bg-slate-50 py-2 px-4 rounded-lg w-fit mx-auto">
+                        <Icon name="time" className="h-4 w-4" />
+                        <span className="text-sm font-medium">Renvoyer dans {resendCooldown}s</span>
+                    </div>
+                ) : (
                     <button
                         onClick={resend}
-                        disabled={resendCooldown > 0 || loading}
-                        className="text-blue-600 hover:text-blue-800 font-medium text-sm disabled:opacity-50 flex items-center justify-center space-x-2"
+                        disabled={loading}
+                        className="text-blue-600 hover:text-blue-800 font-semibold text-sm inline-flex items-center gap-2 hover:bg-blue-50 px-4 py-2 rounded-lg transition-colors"
                     >
                         <Icon name="refresh" className="h-4 w-4" />
                         <span>Renvoyer le code</span>
                     </button>
-                </div>
-
-                <p className="text-center text-xs text-slate-500">
-                    Le code expire dans 10 minutes
-                </p>
+                )}
             </div>
         </div>
-    );
+    </div>
+  );
 };
 
 export default OtpScreen;

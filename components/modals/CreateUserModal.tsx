@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { User, UserRole } from '../../types';
 import { api } from '../../services/api';
-import { useAppContext } from '../../contexts/AppContext';
 import { Icon } from '../common/Icon';
 
 interface CreateUserModalProps {
@@ -11,7 +10,6 @@ interface CreateUserModalProps {
 }
 
 const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClose, onUserCreated }) => {
-  const { currentUser } = useAppContext();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     username: '',
@@ -73,6 +71,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClose, onUs
       [UserRole.DESIGNER]: 'design',
       [UserRole.IMPRIMEUR]: 'print',
       [UserRole.COMMERCIAL]: 'person',
+      [UserRole.LOGISTIQUE]: 'delivery',
     };
     return icons[role] || 'person';
   };
@@ -83,6 +82,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClose, onUs
       [UserRole.DESIGNER]: 'from-purple-500 to-purple-600',
       [UserRole.IMPRIMEUR]: 'from-blue-500 to-blue-600',
       [UserRole.COMMERCIAL]: 'from-green-500 to-green-600',
+      [UserRole.LOGISTIQUE]: 'from-orange-500 to-orange-600',
     };
     return colors[role] || 'from-gray-500 to-gray-600';
   };
@@ -130,7 +130,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClose, onUs
                         value={formData.first_name}
                         onChange={(e) => setFormData(prev => ({ ...prev, first_name: e.target.value }))}
                         className="w-full bg-white border border-slate-300 rounded-xl px-4 py-4 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
-                        placeholder="John"
+                        placeholder="Karim"
                       />
                     </div>
 
@@ -144,7 +144,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClose, onUs
                         value={formData.last_name}
                         onChange={(e) => setFormData(prev => ({ ...prev, last_name: e.target.value }))}
                         className="w-full bg-white border border-slate-300 rounded-xl px-4 py-4 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
-                        placeholder="Doe"
+                        placeholder="Benali"
                       />
                     </div>
                   </div>
@@ -159,7 +159,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClose, onUs
                       value={formData.email}
                       onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                       className="w-full bg-white border border-slate-300 rounded-xl px-4 py-4 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
-                      placeholder="john.doe@entreprise.com"
+                      placeholder="karim.benali@lap.ma"
                     />
                   </div>
 
@@ -172,7 +172,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClose, onUs
                       value={formData.phone}
                       onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
                       className="w-full bg-white border border-slate-300 rounded-xl px-4 py-4 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
-                      placeholder="+33 1 23 45 67 89"
+                      placeholder="+212 6 61 23 45 67"
                     />
                   </div>
                 </div>
@@ -197,7 +197,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClose, onUs
                       value={formData.username}
                       onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
                       className="w-full bg-white border border-slate-300 rounded-xl px-4 py-4 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
-                      placeholder="johndoe"
+                      placeholder="k.benali"
                     />
                   </div>
 
@@ -268,6 +268,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClose, onUs
                               {role === UserRole.DESIGNER && 'Gestion des designs et créations'}
                               {role === UserRole.IMPRIMEUR && 'Gestion de la production et impression'}
                               {role === UserRole.COMMERCIAL && 'Gestion des clients et commandes'}
+                              {role === UserRole.LOGISTIQUE && 'Gestion de livraison et installation'}
                             </span>
                           </div>
                           <div className={`w-6 h-6 rounded-full border-2 ${
