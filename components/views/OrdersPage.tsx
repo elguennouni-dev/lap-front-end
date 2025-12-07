@@ -4,6 +4,7 @@ import { api } from '../../services/api';
 import { useAppContext } from '../../contexts/AppContext';
 import { Icon } from '../common/Icon';
 import CreateOrderModal from '../modals/CreateOrderModal';
+import OrderDetailModal from './OrderDetailModal';
 
 const OrdersPage: React.FC = () => {
   const { currentUser } = useAppContext();
@@ -11,7 +12,11 @@ const OrdersPage: React.FC = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // State for Modals
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null); // New state for Detail Modal
+
   const [filterStatus, setFilterStatus] = useState<OrderStatus | 'ALL'>('ALL');
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -256,7 +261,11 @@ const OrdersPage: React.FC = () => {
                       <Icon name="schedule" className="h-4 w-4" />
                       <span>Créé le {new Date(order.created_at).toLocaleDateString('fr-FR')}</span>
                     </div>
-                    <button className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-2 px-6 rounded-xl flex items-center space-x-2 transition-all duration-200 shadow-lg shadow-blue-500/25">
+                    {/* Fixed Button with onClick handler */}
+                    <button 
+                      onClick={() => setSelectedOrder(order)}
+                      className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-2 px-6 rounded-xl flex items-center space-x-2 transition-all duration-200 shadow-lg shadow-blue-500/25"
+                    >
                       <span>Voir détails</span>
                       <Icon name="chevron-right" className="h-4 w-4" />
                     </button>
@@ -267,6 +276,7 @@ const OrdersPage: React.FC = () => {
           </div>
         </div>
 
+        {/* Right Side Stats */}
         <div className="space-y-6">
           <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-6 text-white sticky top-6">
             <div className="flex items-center space-x-3 mb-4">
@@ -324,6 +334,7 @@ const OrdersPage: React.FC = () => {
         </div>
       )}
 
+      {/* Modals */}
       {canCreateOrder && (
         <CreateOrderModal 
           isOpen={showCreateModal}
@@ -331,6 +342,16 @@ const OrdersPage: React.FC = () => {
           onOrderCreated={handleOrderCreated}
           customers={customers}
           products={products}
+        />
+      )}
+
+      {selectedOrder && (
+        <OrderDetailModal
+          orderId={selectedOrder.order_id}
+          onClose={() => {
+            setSelectedOrder(null);
+            fetchData(); // Refresh list after closing details (in case status changed)
+          }}
         />
       )}
     </div>

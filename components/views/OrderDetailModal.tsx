@@ -444,24 +444,16 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ orderId, onClose })
               <div className="space-y-3">
                 <div className="flex items-center space-x-2">
                   <Icon name="check-circle" className="h-5 w-5 text-slate-600" />
-                  <label className="text-sm font-medium text-slate-800">Décision Rapide</label>
+                  <label className="text-sm font-medium text-slate-800">Décision</label>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <button 
-                    onClick={() => handleAction(() => api.updateOrderStatus(order.order_id, OrderStatus.DESIGN_APPROVED))}
-                    className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg shadow-green-500/25"
-                  >
-                    <Icon name="check-circle" className="h-4 w-4" />
-                    <span>Approuver</span>
-                  </button>
-                  <button 
-                    onClick={() => handleAction(() => api.updateOrderStatus(order.order_id, OrderStatus.DESIGN_ASSIGNED))}
-                    className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg shadow-red-500/25"
-                  >
-                    <Icon name="close" className="h-4 w-4" />
-                    <span>Rejeter</span>
-                  </button>
-                </div>
+                {/* Only Approve option available, removed reject */}
+                <button 
+                  onClick={() => handleAction(() => api.updateOrderStatus(order.order_id, OrderStatus.DESIGN_APPROVED))}
+                  className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg shadow-green-500/25"
+                >
+                  <Icon name="check-circle" className="h-4 w-4" />
+                  <span>Approuver</span>
+                </button>
               </div>
             )}
 
@@ -522,22 +514,14 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ orderId, onClose })
                   <Icon name="verified" className="h-5 w-5 text-slate-600" />
                   <label className="text-sm font-medium text-slate-800">Approbation Finale</label>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <button 
-                    onClick={() => handleAction(() => api.updateOrderStatus(order.order_id, OrderStatus.COMPLETED))}
-                    className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg shadow-emerald-500/25"
-                  >
-                    <Icon name="verified" className="h-4 w-4" />
-                    <span>Terminer</span>
-                  </button>
-                  <button 
-                    onClick={() => handleAction(() => api.updateOrderStatus(order.order_id, OrderStatus.PRODUCTION_ASSIGNED))}
-                    className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg shadow-red-500/25"
-                  >
-                    <Icon name="close" className="h-4 w-4" />
-                    <span>Rejeter</span>
-                  </button>
-                </div>
+                {/* Only Finish option available, removed reject */}
+                <button 
+                  onClick={() => handleAction(() => api.updateOrderStatus(order.order_id, OrderStatus.COMPLETED))}
+                  className="w-full bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-semibold py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center space-x-2 shadow-lg shadow-emerald-500/25"
+                >
+                  <Icon name="verified" className="h-4 w-4" />
+                  <span>Terminer</span>
+                </button>
               </div>
             )}
           </>
@@ -549,20 +533,13 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ orderId, onClose })
               <Icon name="pending" className="h-5 w-5 text-yellow-600" />
               <p className="font-semibold text-yellow-800">Nouvelle tâche : {task.step_name}</p>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <button 
-                onClick={() => handleAction(() => api.updateTaskStatus(order.order_id, task.task_id, TaskStatus.ACCEPTED))}
-                className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 shadow-sm"
-              >
-                Accepter
-              </button>
-              <button 
-                onClick={() => handleAction(() => api.updateTaskStatus(order.order_id, task.task_id, TaskStatus.REJECTED))}
-                className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 shadow-sm"
-              >
-                Rejeter
-              </button>
-            </div>
+            {/* Only Accept option available, removed reject */}
+            <button 
+              onClick={() => handleAction(() => api.updateTaskStatus(order.order_id, task.task_id, TaskStatus.ACCEPTED))}
+              className="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 shadow-sm"
+            >
+              Accepter
+            </button>
           </div>
         ))}
 
