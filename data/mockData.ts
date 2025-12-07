@@ -347,7 +347,7 @@ const generateTask = (taskId: number, orderId: number, stepName: string, assigne
 export const MOCK_ORDERS: Order[] = [
     {
         order_id: 1,
-        order_number: 'Projet dyal l 7aj',
+        order_number: 'Projet de LAP',
         customer_id: 1,
         status: OrderStatus.NEW_ORDER,
         priority: 'Normale',
