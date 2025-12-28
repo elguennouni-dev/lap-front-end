@@ -9,7 +9,7 @@ import {
   DashboardStats
 } from '../types';
 
-const API_URL = 'http://13.62.231.162:2099';
+const API_URL = 'http://13.62.231.162:2099/';
 
 const handleResponse = async (response: Response) => {
   const url = response.url;
