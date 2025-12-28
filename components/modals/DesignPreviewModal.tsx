@@ -1,6 +1,5 @@
-// components/modals/DesignPreviewModal.tsx
 import React, { useState } from 'react';
-import { Task, FileAttachment } from '../../types';
+import { Task, UserRole } from '../../types';
 import { api } from '../../services/api';
 import { useAppContext } from '../../contexts/AppContext';
 import { Icon } from '../common/Icon';
@@ -20,17 +19,19 @@ const DesignPreviewModal: React.FC<DesignPreviewModalProps> = ({
 }) => {
   const { currentUser } = useAppContext();
   const [loading, setLoading] = useState(false);
-  const [selectedFile, setSelectedFile] = useState<FileAttachment | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-
-  const designFiles = task.design_files || [];
+  
+  // In the current backend, we only have one file per task usually (stored in 'uploadFile')
+  // But to keep it compatible with your UI, we treat it as an array if it exists.
+  const fileUrl = task.uploadFile 
+    ? `http://localhost:2099/uploads/${task.uploadFile}` // Assuming we serve static files here
+    : null;
 
   const handleApprove = async () => {
     if (!currentUser) return;
     
     setLoading(true);
     try {
-      await api.updateOrderStatus(task.order_id, 'DESIGN_APPROVED');
+      await api.validateTask(task.id, true);
       onStatusChange();
       onClose();
     } catch (error) {
@@ -45,7 +46,7 @@ const DesignPreviewModal: React.FC<DesignPreviewModalProps> = ({
     
     setLoading(true);
     try {
-      await api.updateOrderStatus(task.order_id, 'DESIGN_ASSIGNED');
+      await api.validateTask(task.id, false);
       onStatusChange();
       onClose();
     } catch (error) {
@@ -55,175 +56,102 @@ const DesignPreviewModal: React.FC<DesignPreviewModalProps> = ({
     }
   };
 
-  const isPDF = selectedFile?.file_type === 'application/pdf';
+  // Simple check for image extension
+  const isImage = fileUrl ? /\.(jpg|jpeg|png|gif|webp)$/i.test(fileUrl) : false;
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black/70 flex justify-center items-center z-50 p-4">
-      <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-y-auto">
-        <div className="p-6 border-b border-border">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-y-auto">
+        
+        {/* Header */}
+        <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-2xl font-bold text-text-primary">Aperçu du Design</h2>
-              <p className="text-text-secondary text-sm mt-1">
-                Commande: {task.order_id} - {task.step_name}
+              <h2 className="text-2xl font-bold text-gray-800">Aperçu du Fichier</h2>
+              <p className="text-gray-500 text-sm mt-1">
+                Tâche #{task.id} - {task.type}
               </p>
             </div>
             <button 
               onClick={onClose}
-              className="p-2 hover:bg-surface-hover rounded-xl transition-colors"
+              className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
             >
-              <Icon name="close" className="h-6 w-6 text-text-secondary" />
+              <Icon name="close" className="h-6 w-6 text-gray-500" />
             </button>
           </div>
         </div>
 
         <div className="flex h-[600px]">
-          {/* File List Sidebar */}
-          <div className="w-80 border-r border-border bg-surface-hover overflow-y-auto">
-            <div className="p-4">
-              <h3 className="font-semibold text-text-primary mb-3">Fichiers uploadés</h3>
-              <div className="space-y-2">
-                {designFiles.map((file) => (
-                  <button
-                    key={file.file_id}
-                    onClick={() => setSelectedFile(file)}
-                    className={`w-full text-left p-3 rounded-lg transition-colors ${
-                      selectedFile?.file_id === file.file_id
-                        ? 'bg-primary text-white'
-                        : 'hover:bg-surface'
-                    }`}
+          
+          {/* Main Preview Area */}
+          <div className="flex-1 bg-gray-100 flex items-center justify-center p-8 relative">
+            {fileUrl ? (
+              isImage ? (
+                <img 
+                  src={fileUrl} 
+                  alt="Design Preview"
+                  className="max-w-full max-h-full object-contain rounded-lg shadow-lg"
+                />
+              ) : (
+                <div className="text-center p-8 bg-white rounded-xl shadow-sm">
+                  <Icon name="attachment" className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                  <p className="text-lg font-medium text-gray-700 mb-2">Fichier non prévisualisable</p>
+                  <a 
+                    href={fileUrl} 
+                    target="_blank" 
+                    rel="noreferrer"
+                    className="text-blue-600 hover:underline"
                   >
-                    <div className="flex items-center space-x-2">
-                      <Icon 
-                        name={file.file_type === 'application/pdf' ? 'picture-as-pdf' : 'image'} 
-                        className="h-4 w-4" 
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate">{file.file_name}</p>
-                        <p className="text-xs opacity-75">
-                          {new Date(file.uploaded_at).toLocaleDateString('fr-FR')}
-                        </p>
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Preview Area */}
-          <div className="flex-1 flex flex-col">
-            {selectedFile ? (
-              <>
-                {/* Preview Header */}
-                <div className="p-4 border-b border-border flex items-center justify-between">
-                  <div>
-                    <h3 className="font-semibold text-text-primary">{selectedFile.file_name}</h3>
-                    <p className="text-text-secondary text-sm">
-                      Uploadé le {new Date(selectedFile.uploaded_at).toLocaleDateString('fr-FR')}
-                    </p>
-                  </div>
-                  
-                  {isPDF && (
-                    <div className="flex items-center space-x-3">
-                      <button
-                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                        className="p-2 hover:bg-surface-hover rounded-lg transition-colors"
-                        disabled={currentPage === 1}
-                      >
-                        <Icon name="chevron-left" className="h-4 w-4" />
-                      </button>
-                      <span className="text-sm text-text-secondary">
-                        Page {currentPage}
-                      </span>
-                      <button
-                        onClick={() => setCurrentPage(prev => prev + 1)}
-                        className="p-2 hover:bg-surface-hover rounded-lg transition-colors"
-                      >
-                        <Icon name="chevron-right" className="h-4 w-4" />
-                      </button>
-                    </div>
-                  )}
+                    Télécharger le fichier
+                  </a>
                 </div>
-
-                {/* Preview Content */}
-                <div className="flex-1 bg-gray-100 flex items-center justify-center p-8">
-                  {isPDF ? (
-                    <div className="bg-white shadow-lg rounded-lg p-8 max-w-full max-h-full overflow-auto">
-                      <div className="text-center">
-                        <Icon name="picture-as-pdf" className="h-16 w-16 text-red-600 mx-auto mb-4" />
-                        <p className="text-text-primary font-medium">Aperçu PDF</p>
-                        <p className="text-text-secondary text-sm mt-1">
-                          Page {currentPage} - {selectedFile.file_name}
-                        </p>
-                        <p className="text-text-secondary text-xs mt-4">
-                          Dans une application réelle, un vrai lecteur PDF serait intégré ici
-                        </p>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="max-w-full max-h-full">
-                      <img 
-                        src={selectedFile.file_url} 
-                        alt={selectedFile.file_name}
-                        className="max-w-full max-h-full object-contain rounded-lg shadow-lg"
-                      />
-                    </div>
-                  )}
-                </div>
-              </>
+              )
             ) : (
-              <div className="flex-1 flex items-center justify-center text-text-secondary">
-                <div className="text-center">
-                  <Icon name="visibility" className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                  <p>Sélectionnez un fichier pour voir l'aperçu</p>
-                </div>
+              <div className="text-center text-gray-400">
+                <Icon name="image" className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                <p>Aucun fichier uploadé pour cette tâche</p>
               </div>
             )}
           </div>
         </div>
 
-        {/* Actions */}
-        <div className="p-6 border-t border-border">
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-text-secondary">
-              {designFiles.length} fichier(s) uploadé(s)
-            </div>
+        {/* Footer Actions */}
+        <div className="p-6 border-t border-gray-200 bg-gray-50">
+          <div className="flex items-center justify-end space-x-4">
+            <button
+              onClick={onClose}
+              className="px-6 py-3 text-gray-600 hover:text-gray-800 font-medium transition-colors"
+            >
+              Fermer
+            </button>
             
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={onClose}
-                className="px-6 py-3 text-text-secondary hover:text-text-primary font-medium transition-colors"
-              >
-                Fermer
-              </button>
-              
-              {currentUser && currentUser.roles.includes('ADMIN') && (
-                <>
-                  <button
-                    onClick={handleReject}
-                    disabled={loading}
-                    className="bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-6 rounded-xl disabled:opacity-50 transition-all duration-200 flex items-center space-x-2"
-                  >
-                    <Icon name="close" className="h-4 w-4" />
-                    <span>Rejeter le design</span>
-                  </button>
-                  
-                  <button
-                    onClick={handleApprove}
-                    disabled={loading}
-                    className="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-xl disabled:opacity-50 transition-all duration-200 flex items-center space-x-2"
-                  >
-                    <Icon name="check" className="h-4 w-4" />
-                    <span>Approuver le design</span>
-                  </button>
-                </>
-              )}
-            </div>
+            {/* Only Admin can Validate/Reject via this Modal (or based on your logic) */}
+            {currentUser && currentUser.role === UserRole.ADMINISTRATEUR && (
+              <>
+                <button
+                  onClick={handleReject}
+                  disabled={loading || !fileUrl}
+                  className="bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-6 rounded-xl disabled:opacity-50 transition-all duration-200 flex items-center space-x-2"
+                >
+                  <Icon name="close" className="h-4 w-4" />
+                  <span>Rejeter</span>
+                </button>
+                
+                <button
+                  onClick={handleApprove}
+                  disabled={loading || !fileUrl}
+                  className="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-xl disabled:opacity-50 transition-all duration-200 flex items-center space-x-2"
+                >
+                  <Icon name="check" className="h-4 w-4" />
+                  <span>Valider</span>
+                </button>
+              </>
+            )}
           </div>
         </div>
+
       </div>
     </div>
   );

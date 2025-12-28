@@ -33,7 +33,7 @@ const CreateCustomerModal: React.FC<CreateCustomerModalProps> = ({ isOpen, onClo
     try {
       const newCustomer = await api.createCustomer({
         ...formData,
-        created_by: currentUser?.user_id || 0,
+        created_by: currentUser?.id || 0,
       });
       
       onCustomerCreated(newCustomer);

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAppContext } from '../../contexts/AppContext';
 import { Icon } from '../common/Icon';
+import { api } from '../../services/api';
 
 const OtpScreen: React.FC = () => {
   const { verifyOtp, resendOtp, isAwaitingOtp } = useAppContext();
@@ -13,9 +14,11 @@ const OtpScreen: React.FC = () => {
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
+    // In a real flow, email/username should be passed via context or props
+    // We assume 'pendingEmail' is stored in localStorage by LoginScreen before transition
     const storedEmail = localStorage.getItem('pendingEmail') || '';
     setEmail(storedEmail);
-    // Autofocus first input on mount
+    
     setTimeout(() => inputRefs.current[0]?.focus(), 100);
     setError('');
     setOtp(Array(6).fill(''));
@@ -30,7 +33,6 @@ const OtpScreen: React.FC = () => {
   }, [resendCooldown]);
 
   const handleInput = (index: number, value: string) => {
-    // Only allow digits
     if (!/^\d?$/.test(value)) return;
 
     const updated = [...otp];
@@ -38,14 +40,12 @@ const OtpScreen: React.FC = () => {
     setOtp(updated);
     setError('');
 
-    // Move to next input if value is entered
     if (value && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
   };
 
   const handleKey = (index: number, e: React.KeyboardEvent) => {
-    // Move to previous input on Backspace if current is empty
     if (e.key === "Backspace" && !otp[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
     }
@@ -61,7 +61,6 @@ const OtpScreen: React.FC = () => {
     text.split('').forEach((n, i) => arr[i] = n);
     setOtp(arr);
 
-    // Focus appropriate input after paste
     const nextEmptyIndex = arr.findIndex(val => val === '');
     const focusIndex = nextEmptyIndex === -1 ? 5 : nextEmptyIndex;
     inputRefs.current[focusIndex]?.focus();
@@ -82,17 +81,14 @@ const OtpScreen: React.FC = () => {
     }
 
     setLoading(true);
-    // Simulate slight network delay for better UX
-    // await new Promise(r => setTimeout(r, 600));
-
+    
+    // Call Context's verifyOtp which likely wraps api.verifyOtp
     const result = await verifyOtp(email, otpString);
 
     if (!result.success) {
       setError(result.message || "Code invalide");
-      // Clear OTP on error? Optional. Usually better to keep it so user can edit.
-      // setOtp(Array(6).fill('')); 
-      // inputRefs.current[0]?.focus();
     }
+    // If success, Context handles redirect/state update
     setLoading(false);
   };
 
@@ -104,6 +100,7 @@ const OtpScreen: React.FC = () => {
     inputRefs.current[0]?.focus();
     setError('');
 
+    // Context resend logic
     await resendOtp(email);
   };
 
@@ -116,11 +113,12 @@ const OtpScreen: React.FC = () => {
     ? email.replace(/(.{2})(.*)(?=@)/, (_, a, b) => a + '*'.repeat(b.length))
     : "votre email";
 
+  // If not awaiting OTP, this component might not be rendered by parent routing, 
+  // but good to have a check if using conditional rendering inside a layout.
   if (!isAwaitingOtp) return null;
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-slate-50 relative overflow-hidden">
-        {/* Background Decor */}
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
             <div className="absolute top-[10%] left-[10%] w-[40%] h-[40%] rounded-full bg-blue-100/40 blur-3xl"></div>
             <div className="absolute bottom-[10%] right-[10%] w-[40%] h-[40%] rounded-full bg-purple-100/40 blur-3xl"></div>
@@ -128,7 +126,6 @@ const OtpScreen: React.FC = () => {
 
         <div className="w-full max-w-md p-8 bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/50 z-10 relative">
             
-            {/* Header */}
             <div className="text-center mb-8">
                 <div className="flex justify-center mb-6">
                     <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center shadow-inner">
@@ -140,7 +137,6 @@ const OtpScreen: React.FC = () => {
                 <p className="text-slate-800 font-semibold">{maskedEmail}</p>
             </div>
 
-            {/* Form */}
             <form onSubmit={verify} className="space-y-8">
                 <div className="space-y-4">
                     <div className="flex justify-between gap-2" onPaste={pasteOtp}>
@@ -163,7 +159,8 @@ const OtpScreen: React.FC = () => {
                         ))}
                     </div>
 
-                    <div className="flex justify-center">
+                    {/* Demo/Dev Helper - Remove in Production */}
+                    {/* <div className="flex justify-center">
                         <button
                             type="button"
                             onClick={fillWithDemoCode}
@@ -172,7 +169,7 @@ const OtpScreen: React.FC = () => {
                             <Icon name="auto-fill" className="h-3 w-3" />
                             <span>Demo: 123456</span>
                         </button>
-                    </div>
+                    </div> */}
                 </div>
 
                 {error && (
@@ -201,7 +198,6 @@ const OtpScreen: React.FC = () => {
                 </button>
             </form>
 
-            {/* Footer / Resend */}
             <div className="mt-8 text-center pt-6 border-t border-slate-100">
                 <p className="text-sm text-slate-500 mb-3">
                     Vous n'avez pas reçu le code ?

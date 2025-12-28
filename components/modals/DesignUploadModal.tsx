@@ -1,6 +1,5 @@
-// components/modals/DesignUploadModal.tsx
 import React, { useState, useCallback } from 'react';
-import { Task, FileAttachment } from '../../types';
+import { Task } from '../../types';
 import { api } from '../../services/api';
 import { useAppContext } from '../../contexts/AppContext';
 import { Icon } from '../common/Icon';
@@ -32,6 +31,8 @@ const DesignUploadModal: React.FC<DesignUploadModalProps> = ({
   const [selectedDesignIndex, setSelectedDesignIndex] = useState<number>(0);
 
   const handleFilesSelected = useCallback((files: File[]) => {
+    // In this simplified backend version, we might only want one final proof.
+    // However, keeping the UI capable of multiple selections for flexibility.
     const newDesigns = files.map(file => ({
       file,
       previewUrl: URL.createObjectURL(file),
@@ -46,17 +47,25 @@ const DesignUploadModal: React.FC<DesignUploadModalProps> = ({
     setLoading(true);
     
     try {
-      for (const design of designs) {
-        setUploadProgress(prev => ({ ...prev, [design.id]: 0 }));
-        
-        for (let progress = 0; progress <= 100; progress += 20) {
-          await new Promise(resolve => setTimeout(resolve, 100));
-          setUploadProgress(prev => ({ ...prev, [design.id]: progress }));
-        }
-
-        await api.uploadDesignFile(task.task_id, design.file, currentUser.user_id);
-        URL.revokeObjectURL(design.previewUrl);
+      // We take the LAST selected file as the "Final Proof" for the backend
+      // In a real app with multiple file support, we would loop.
+      const designToUpload = designs[designs.length - 1]; 
+      
+      setUploadProgress(prev => ({ ...prev, [designToUpload.id]: 0 }));
+      
+      // Simulate progress for UI feedback
+      for (let progress = 0; progress <= 90; progress += 30) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        setUploadProgress(prev => ({ ...prev, [designToUpload.id]: progress }));
       }
+
+      // API Call: Completes the task with the uploaded file
+      await api.completeTask(task.id, designToUpload.file);
+      
+      setUploadProgress(prev => ({ ...prev, [designToUpload.id]: 100 }));
+
+      // Clean up object URLs
+      designs.forEach(d => URL.revokeObjectURL(d.previewUrl));
 
       onUploadComplete();
       onClose();
@@ -64,6 +73,7 @@ const DesignUploadModal: React.FC<DesignUploadModalProps> = ({
       setUploadProgress({});
     } catch (error) {
       console.error('Failed to upload files', error);
+      alert("Erreur lors de l'upload");
     } finally {
       setLoading(false);
     }
@@ -114,20 +124,20 @@ const DesignUploadModal: React.FC<DesignUploadModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black/70 flex justify-center items-center z-50 p-4">
-      <div className="bg-surface rounded-2xl shadow-2xl w-full max-w-6xl max-h-[95vh] overflow-y-auto">
-        <div className="p-8 border-b border-border">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[95vh] overflow-y-auto">
+        <div className="p-8 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-3xl font-bold text-text-primary">Upload Designs</h2>
-              <p className="text-text-secondary text-lg mt-2">
-                Commande: {task.order_id} - {task.step_name}
+              <h2 className="text-3xl font-bold text-gray-800">Upload Designs</h2>
+              <p className="text-gray-500 text-lg mt-2">
+                Tâche: #{task.id} - {task.type}
               </p>
             </div>
             <button 
               onClick={onClose}
-              className="p-3 hover:bg-surface-hover rounded-xl transition-colors"
+              className="p-3 hover:bg-gray-100 rounded-xl transition-colors"
             >
-              <Icon name="close" className="h-7 w-7 text-text-secondary" />
+              <Icon name="close" className="h-7 w-7 text-gray-500" />
             </button>
           </div>
         </div>
@@ -136,18 +146,18 @@ const DesignUploadModal: React.FC<DesignUploadModalProps> = ({
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
             <div className="space-y-6">
               <div>
-                <h3 className="text-xl font-semibold text-text-primary mb-4">Select Files</h3>
+                <h3 className="text-xl font-semibold text-gray-800 mb-4">Select Files</h3>
                 <FileUpload 
                   onFilesSelected={handleFilesSelected}
                   acceptedTypes=".pdf,.jpg,.jpeg,.png,.ai,.psd,.webp"
-                  maxFiles={10}
+                  maxFiles={5}
                   maxSize={20}
                 />
               </div>
 
               {designs.length > 0 && (
                 <div>
-                  <h3 className="text-xl font-semibold text-text-primary mb-4">
+                  <h3 className="text-xl font-semibold text-gray-800 mb-4">
                     Selected Designs ({designs.length})
                   </h3>
                   <div className="space-y-3 max-h-80 overflow-y-auto">
@@ -155,12 +165,12 @@ const DesignUploadModal: React.FC<DesignUploadModalProps> = ({
                       <div 
                         key={design.id}
                         className={`flex items-center justify-between p-4 rounded-xl cursor-pointer transition-all ${
-                          index === selectedDesignIndex ? 'bg-primary/20 border-2 border-primary' : 'bg-surface-hover hover:bg-surface-hover/80'
+                          index === selectedDesignIndex ? 'bg-blue-50 border-2 border-blue-500' : 'bg-gray-50 hover:bg-gray-100'
                         }`}
                         onClick={() => setSelectedDesignIndex(index)}
                       >
                         <div className="flex items-center space-x-4 flex-1">
-                          <div className="w-12 h-12 bg-surface rounded-lg overflow-hidden flex items-center justify-center">
+                          <div className="w-12 h-12 bg-white rounded-lg overflow-hidden flex items-center justify-center border border-gray-200">
                             {getFileType(design.file.name) === 'image' ? (
                               <img 
                                 src={design.previewUrl} 
@@ -170,21 +180,21 @@ const DesignUploadModal: React.FC<DesignUploadModalProps> = ({
                             ) : (
                               <Icon 
                                 name={getFileType(design.file.name) === 'pdf' ? 'picture-as-pdf' : 'description'} 
-                                className="h-6 w-6 text-primary" 
+                                className="h-6 w-6 text-blue-600" 
                               />
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="font-medium text-text-primary truncate">{design.file.name}</p>
-                            <p className="text-text-secondary text-sm">{formatFileSize(design.file.size)}</p>
+                            <p className="font-medium text-gray-800 truncate">{design.file.name}</p>
+                            <p className="text-gray-500 text-sm">{formatFileSize(design.file.size)}</p>
                           </div>
                         </div>
                         
                         <div className="flex items-center space-x-3">
                           {uploadProgress[design.id] !== undefined && uploadProgress[design.id] < 100 && (
-                            <div className="w-24 bg-border rounded-full h-2">
+                            <div className="w-24 bg-gray-200 rounded-full h-2">
                               <div 
-                                className="bg-primary h-2 rounded-full transition-all duration-300"
+                                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                                 style={{ width: `${uploadProgress[design.id]}%` }}
                               ></div>
                             </div>
@@ -212,131 +222,65 @@ const DesignUploadModal: React.FC<DesignUploadModalProps> = ({
             </div>
 
             <div className="space-y-6">
-              <h3 className="text-xl font-semibold text-text-primary">Design Preview</h3>
+              <h3 className="text-xl font-semibold text-gray-800">Preview</h3>
               
               {selectedDesign ? (
-                <div className="bg-surface-hover rounded-2xl p-6 space-y-4">
+                <div className="bg-gray-50 rounded-2xl p-6 space-y-4 border border-gray-200">
                   <div className="flex items-center justify-between">
-                    <h4 className="text-lg font-medium text-text-primary truncate">
+                    <h4 className="text-lg font-medium text-gray-800 truncate">
                       {selectedDesign.file.name}
                     </h4>
-                    <span className="px-3 py-1 bg-primary/20 text-primary text-sm font-medium rounded-full">
+                    <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-medium rounded-full">
                       {getFileType(selectedDesign.file.name).toUpperCase()}
                     </span>
                   </div>
 
-                  <div className="bg-black/5 rounded-xl p-4 flex items-center justify-center min-h-[400px] max-h-[500px] overflow-auto">
+                  <div className="bg-white border border-gray-200 rounded-xl p-4 flex items-center justify-center min-h-[400px] max-h-[500px] overflow-auto">
                     {getFileType(selectedDesign.file.name) === 'image' ? (
                       <img 
                         src={selectedDesign.previewUrl} 
                         alt="Design preview" 
                         className="max-w-full max-h-full object-contain rounded-lg"
                       />
-                    ) : getFileType(selectedDesign.file.name) === 'pdf' ? (
-                      <div className="text-center space-y-4">
-                        <Icon name="picture-as-pdf" className="h-20 w-20 text-red-600 mx-auto" />
-                        <p className="text-text-secondary text-lg">PDF Preview</p>
-                        <p className="text-text-secondary text-sm">File: {selectedDesign.file.name}</p>
-                      </div>
                     ) : (
                       <div className="text-center space-y-4">
-                        <Icon name="description" className="h-20 w-20 text-primary mx-auto" />
-                        <p className="text-text-secondary text-lg">Source File</p>
-                        <p className="text-text-secondary text-sm">File: {selectedDesign.file.name}</p>
+                        <Icon name="description" className="h-20 w-20 text-blue-400 mx-auto" />
+                        <p className="text-gray-500 text-lg">Aperçu non disponible pour ce format</p>
                       </div>
                     )}
                   </div>
-
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="text-text-secondary">Size: </span>
-                      <span className="text-text-primary font-medium">
-                        {formatFileSize(selectedDesign.file.size)}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-text-secondary">Type: </span>
-                      <span className="text-text-primary font-medium">
-                        {selectedDesign.file.type || 'Unknown'}
-                      </span>
-                    </div>
-                  </div>
                 </div>
               ) : (
-                <div className="bg-surface-hover rounded-2xl p-12 text-center space-y-4">
-                  <Icon name="image" className="h-16 w-16 text-text-secondary/50 mx-auto" />
-                  <p className="text-text-secondary text-lg">No design selected</p>
-                  <p className="text-text-secondary text-sm">Select or upload designs to preview them here</p>
-                </div>
-              )}
-
-              {designs.length > 1 && (
-                <div className="flex items-center justify-between bg-surface-hover rounded-xl p-4">
-                  <button
-                    onClick={() => setSelectedDesignIndex(prev => Math.max(0, prev - 1))}
-                    disabled={selectedDesignIndex === 0}
-                    className="flex items-center space-x-2 px-4 py-2 bg-primary text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                  >
-                    <Icon name="arrow-back" className="h-4 w-4" />
-                    <span>Previous</span>
-                  </button>
-                  
-                  <span className="text-text-primary font-medium">
-                    {selectedDesignIndex + 1} of {designs.length}
-                  </span>
-                  
-                  <button
-                    onClick={() => setSelectedDesignIndex(prev => Math.min(designs.length - 1, prev + 1))}
-                    disabled={selectedDesignIndex === designs.length - 1}
-                    className="flex items-center space-x-2 px-4 py-2 bg-primary text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                  >
-                    <span>Next</span>
-                    <Icon name="arrow-forward" className="h-4 w-4" />
-                  </button>
+                <div className="bg-gray-50 rounded-2xl p-12 text-center space-y-4 border border-gray-200 border-dashed">
+                  <Icon name="image" className="h-16 w-16 text-gray-300 mx-auto" />
+                  <p className="text-gray-500 text-lg">Aucun fichier sélectionné</p>
                 </div>
               )}
             </div>
           </div>
 
-          <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6">
-            <div className="flex items-start space-x-4">
-              <Icon name="info" className="h-6 w-6 text-blue-600 mt-0.5" />
-              <div className="text-base text-blue-800">
-                <p className="font-medium text-lg">Upload Instructions:</p>
-                <ul className="mt-2 list-disc list-inside space-y-2">
-                  <li>Upload final designs in PDF format for approval</li>
-                  <li>You can attach source files (AI, PSD, etc.)</li>
-                  <li>Check that all elements are properly positioned</li>
-                  <li>Ensure colors and fonts are correct</li>
-                  <li>Multiple designs can be uploaded at once</li>
-                  <li>Preview each design before submitting</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-end space-x-6 pt-8 border-t border-border">
+          <div className="flex items-center justify-end space-x-6 pt-8 border-t border-gray-200">
             <button
               type="button"
               onClick={onClose}
-              className="px-8 py-4 text-text-secondary hover:text-text-primary font-medium text-lg transition-colors"
+              className="px-8 py-4 text-gray-600 hover:text-gray-800 font-medium text-lg transition-colors"
             >
-              Cancel
+              Annuler
             </button>
             <button
               onClick={handleUpload}
               disabled={loading || designs.length === 0}
-              className="bg-primary hover:bg-primary/90 text-white font-semibold py-4 px-8 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center space-x-3 text-lg"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-8 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center space-x-3 text-lg"
             >
               {loading ? (
                 <>
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                  <span>Uploading...</span>
+                  <span>Envoi en cours...</span>
                 </>
               ) : (
                 <>
                   <Icon name="cloud-upload" className="h-5 w-5" />
-                  <span>Upload Designs ({designs.length})</span>
+                  <span>Envoyer ({designs.length})</span>
                 </>
               )}
             </button>

@@ -11,15 +11,13 @@ interface CreateUserModalProps {
 
 const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClose, onUserCreated }) => {
   const [loading, setLoading] = useState(false);
+  
+  // Note: Backend UserDto might differ slightly, but we send what's needed for creation
   const [formData, setFormData] = useState({
     username: '',
     email: '',
-    first_name: '',
-    last_name: '',
-    phone: '',
     password: '',
-    roles: [] as UserRole[],
-    is_active: true,
+    role: UserRole.DESIGNER as UserRole, // Backend typically accepts one primary role
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -27,10 +25,9 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClose, onUs
     setLoading(true);
     
     try {
+      // API call to create user
       const newUser = await api.createUser({
-        ...formData,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        ...formData
       });
       
       onUserCreated(newUser);
@@ -38,6 +35,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClose, onUs
       resetForm();
     } catch (error) {
       console.error('Failed to create user', error);
+      alert('Erreur lors de la création de l\'utilisateur');
     } finally {
       setLoading(false);
     }
@@ -47,27 +45,14 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClose, onUs
     setFormData({
       username: '',
       email: '',
-      first_name: '',
-      last_name: '',
-      phone: '',
       password: '',
-      roles: [],
-      is_active: true,
+      role: UserRole.DESIGNER,
     });
-  };
-
-  const handleRoleToggle = (role: UserRole) => {
-    setFormData(prev => ({
-      ...prev,
-      roles: prev.roles.includes(role)
-        ? prev.roles.filter(r => r !== role)
-        : [...prev.roles, role]
-    }));
   };
 
   const getRoleIcon = (role: UserRole) => {
     const icons = {
-      [UserRole.ADMIN]: 'admin-panel-settings',
+      [UserRole.ADMINISTRATEUR]: 'admin-panel-settings',
       [UserRole.DESIGNER]: 'design',
       [UserRole.IMPRIMEUR]: 'print',
       [UserRole.COMMERCIAL]: 'person',
@@ -78,7 +63,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClose, onUs
 
   const getRoleColor = (role: UserRole) => {
     const colors = {
-      [UserRole.ADMIN]: 'from-red-500 to-red-600',
+      [UserRole.ADMINISTRATEUR]: 'from-red-500 to-red-600',
       [UserRole.DESIGNER]: 'from-purple-500 to-purple-600',
       [UserRole.IMPRIMEUR]: 'from-blue-500 to-blue-600',
       [UserRole.COMMERCIAL]: 'from-green-500 to-green-600',
@@ -110,45 +95,17 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClose, onUs
         <form onSubmit={handleSubmit} className="p-8 space-y-8">
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
             <div className="space-y-6">
-              <div className="bg-gradient-to-br from-blue-50 to-blue-50/50 border border-blue-200 rounded-2xl p-6">
+              
+              {/* Account Info */}
+              <div className="bg-gradient-to-br from-emerald-50 to-emerald-50/50 border border-emerald-200 rounded-2xl p-6">
                 <h3 className="text-xl font-semibold text-slate-800 mb-6 flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
-                    <Icon name="person" className="h-5 w-5 text-white" />
+                  <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center">
+                    <Icon name="lock" className="h-5 w-5 text-white" />
                   </div>
-                  <span>Informations Personnelles</span>
+                  <span>Identifiants de Connexion</span>
                 </h3>
                 
                 <div className="space-y-6">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-lg font-medium text-slate-700 mb-3">
-                        Prénom *
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={formData.first_name}
-                        onChange={(e) => setFormData(prev => ({ ...prev, first_name: e.target.value }))}
-                        className="w-full bg-white border border-slate-300 rounded-xl px-4 py-4 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
-                        placeholder="Karim"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-lg font-medium text-slate-700 mb-3">
-                        Nom *
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={formData.last_name}
-                        onChange={(e) => setFormData(prev => ({ ...prev, last_name: e.target.value }))}
-                        className="w-full bg-white border border-slate-300 rounded-xl px-4 py-4 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
-                        placeholder="Benali"
-                      />
-                    </div>
-                  </div>
-
                   <div>
                     <label className="block text-lg font-medium text-slate-700 mb-3">
                       Email *
@@ -163,30 +120,6 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClose, onUs
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-lg font-medium text-slate-700 mb-3">
-                      Téléphone
-                    </label>
-                    <input
-                      type="tel"
-                      value={formData.phone}
-                      onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                      className="w-full bg-white border border-slate-300 rounded-xl px-4 py-4 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-lg"
-                      placeholder="+212 6 61 23 45 67"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-gradient-to-br from-emerald-50 to-emerald-50/50 border border-emerald-200 rounded-2xl p-6">
-                <h3 className="text-xl font-semibold text-slate-800 mb-6 flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center">
-                    <Icon name="lock" className="h-5 w-5 text-white" />
-                  </div>
-                  <span>Identifiants de Connexion</span>
-                </h3>
-                
-                <div className="space-y-6">
                   <div>
                     <label className="block text-lg font-medium text-slate-700 mb-3">
                       Nom d'utilisateur *
@@ -218,18 +151,19 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClose, onUs
               </div>
             </div>
 
+            {/* Roles Selection */}
             <div className="space-y-6">
               <div className="bg-gradient-to-br from-purple-50 to-purple-50/50 border border-purple-200 rounded-2xl p-6">
                 <h3 className="text-xl font-semibold text-slate-800 mb-6 flex items-center space-x-3">
                   <div className="w-10 h-10 bg-purple-600 rounded-xl flex items-center justify-center">
                     <Icon name="groups" className="h-5 w-5 text-white" />
                   </div>
-                  <span>Rôles et Permissions</span>
+                  <span>Rôle Principal</span>
                 </h3>
                 
                 <div className="space-y-4">
                   <p className="text-slate-600 text-lg">
-                    Sélectionnez les rôles attribués à cet utilisateur
+                    Sélectionnez le rôle attribué à cet utilisateur
                   </p>
                   
                   <div className="grid grid-cols-1 gap-4">
@@ -237,46 +171,46 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClose, onUs
                       <button
                         key={role}
                         type="button"
-                        onClick={() => handleRoleToggle(role)}
+                        onClick={() => setFormData(prev => ({ ...prev, role: role }))}
                         className={`p-4 rounded-xl border-2 transition-all duration-200 text-left ${
-                          formData.roles.includes(role)
+                          formData.role === role
                             ? `border-transparent bg-gradient-to-r ${getRoleColor(role)} text-white shadow-lg`
                             : 'border-slate-300 bg-white text-slate-700 hover:border-purple-500/50 hover:shadow-md'
                         }`}
                       >
                         <div className="flex items-center space-x-3">
                           <div className={`p-2 rounded-lg ${
-                            formData.roles.includes(role) 
+                            formData.role === role 
                               ? 'bg-white/20' 
                               : 'bg-slate-100'
                           }`}>
                             <Icon 
                               name={getRoleIcon(role)} 
                               className={`h-5 w-5 ${
-                                formData.roles.includes(role) ? 'text-white' : 'text-slate-600'
+                                formData.role === role ? 'text-white' : 'text-slate-600'
                               }`} 
                             />
                           </div>
                           <div className="flex-1">
                             <span className="font-semibold text-lg block capitalize">
-                              {role.toLowerCase()}
+                              {role}
                             </span>
                             <span className={`text-sm ${
-                              formData.roles.includes(role) ? 'text-white/90' : 'text-slate-500'
+                              formData.role === role ? 'text-white/90' : 'text-slate-500'
                             }`}>
-                              {role === UserRole.ADMIN && 'Accès complet au système'}
-                              {role === UserRole.DESIGNER && 'Gestion des designs et créations'}
-                              {role === UserRole.IMPRIMEUR && 'Gestion de la production et impression'}
-                              {role === UserRole.COMMERCIAL && 'Gestion des clients et commandes'}
-                              {role === UserRole.LOGISTIQUE && 'Gestion de livraison et installation'}
+                              {role === UserRole.ADMINISTRATEUR && 'Accès complet au système'}
+                              {role === UserRole.DESIGNER && 'Gestion des designs'}
+                              {role === UserRole.IMPRIMEUR && 'Gestion de la production'}
+                              {role === UserRole.COMMERCIAL && 'Suivi des commandes'}
+                              {role === UserRole.LOGISTIQUE && 'Livraison et installation'}
                             </span>
                           </div>
                           <div className={`w-6 h-6 rounded-full border-2 ${
-                            formData.roles.includes(role)
+                            formData.role === role
                               ? 'bg-white border-white'
                               : 'border-slate-400'
                           } flex items-center justify-center`}>
-                            {formData.roles.includes(role) && (
+                            {formData.role === role && (
                               <Icon name="check" className="h-4 w-4 text-purple-600" />
                             )}
                           </div>
@@ -284,40 +218,6 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClose, onUs
                       </button>
                     ))}
                   </div>
-                </div>
-              </div>
-
-              <div className="bg-gradient-to-br from-amber-50 to-amber-50/50 border border-amber-200 rounded-2xl p-6">
-                <h3 className="text-xl font-semibold text-slate-800 mb-6 flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-amber-600 rounded-xl flex items-center justify-center">
-                    <Icon name="settings" className="h-5 w-5 text-white" />
-                  </div>
-                  <span>Paramètres du Compte</span>
-                </h3>
-                
-                <div className="flex items-center space-x-4 p-4 bg-white rounded-xl border border-slate-200">
-                  <div className={`w-12 h-6 rounded-full transition-all duration-200 ${
-                    formData.is_active ? 'bg-green-500' : 'bg-slate-300'
-                  } relative`}>
-                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-200 ${
-                      formData.is_active ? 'left-7' : 'left-1'
-                    }`} />
-                  </div>
-                  <div className="flex-1">
-                    <label htmlFor="is_active" className="text-lg font-medium text-slate-800 cursor-pointer">
-                      Compte actif
-                    </label>
-                    <p className="text-slate-600 text-sm">
-                      L'utilisateur pourra se connecter au système
-                    </p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    id="is_active"
-                    checked={formData.is_active}
-                    onChange={(e) => setFormData(prev => ({ ...prev, is_active: e.target.checked }))}
-                    className="sr-only"
-                  />
                 </div>
               </div>
             </div>
@@ -333,7 +233,7 @@ const CreateUserModal: React.FC<CreateUserModalProps> = ({ isOpen, onClose, onUs
             </button>
             <button
               type="submit"
-              disabled={loading || formData.roles.length === 0}
+              disabled={loading}
               className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-4 px-8 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center space-x-3 text-lg shadow-lg shadow-blue-500/25"
             >
               {loading ? (

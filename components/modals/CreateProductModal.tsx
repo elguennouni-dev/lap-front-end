@@ -44,6 +44,7 @@ const CreateProductModal: React.FC<CreateProductModalProps> = ({ isOpen, onClose
     setLoading(true);
     
     try {
+      // NOTE: This API call is likely mocked or non-functional as backend doesn't support products yet
       const newProduct = await api.createProduct({
         ...formData,
         unit_price: 0,

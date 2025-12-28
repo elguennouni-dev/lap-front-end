@@ -1,389 +1,223 @@
-import { MOCK_USERS, MOCK_ORDERS, MOCK_CUSTOMERS, MOCK_PRODUCTS } from '../data/mockData';
-import { User, Order, OrderStatus, Customer, Product, Task, TaskStatus, UserRole, FileAttachment } from '../types';
+import { 
+  User, 
+  Order, 
+  Task, 
+  UserRole, 
+  TaskType, 
+  OrderStatus,
+  Zone,
+  DashboardStats
+} from '../types';
 
-let users: User[] = MOCK_USERS;
-let orders: Order[] = MOCK_ORDERS;
-let customers: Customer[] = MOCK_CUSTOMERS;
-let products: Product[] = MOCK_PRODUCTS;
+const API_URL = 'http://13.62.231.162:2099';
 
-const simulateNetwork = (delay = 500) => new Promise(res => setTimeout(res, delay));
+const handleResponse = async (response: Response) => {
+  const url = response.url;
+  const status = response.status;
+  const text = await response.text();
+  let data: any = {};
+
+  try {
+    data = text ? JSON.parse(text) : {};
+  } catch (err) {
+    data = { error: text };
+  }
+
+  console.groupCollapsed(`[API] ${response.status} - ${url}`);
+  console.log('Statut:', status);
+  console.log('Données:', data);
+  console.groupEnd();
+
+  if (!response.ok) {
+    throw new Error(data.message || data.error || `Erreur HTTP! Statut: ${status}`);
+  }
+  return data;
+};
 
 export const api = {
-  login: async (email: string, password: string): Promise<{success: boolean; message: string; user?: User}> => {
-    await simulateNetwork();
-    const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-    
-    if (!user) {
-      return { success: false, message: 'Utilisateur non trouvé' };
-    }
 
-    if (user.roles.includes(UserRole.ADMIN)) {
-      return { 
-        success: true, 
-        message: 'OTP envoyé', 
-        user 
-      };
-    } else {
-      return { 
-        success: true, 
-        message: 'Connexion réussie', 
-        user 
-      };
-    }
-  },
+  login: async (email: string, password: string): Promise<{success: boolean; message: string; user?: User; otpRequired?: boolean}> => {
+    try {
+      const res = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ usernameOrEmail: email, password: password }),
+      });
+      const data = await handleResponse(res);
 
-  verifyOtp: async (email: string, otp: string): Promise<{success: boolean; message: string; user?: User}> => {
-    await simulateNetwork();
-    
-    if (otp === '123456') {
-      const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
-      if (user) {
-        return { 
-          success: true, 
-          message: 'OTP vérifié avec succès', 
-          user 
-        };
-      }
-    }
-    
-    return { success: false, message: 'OTP invalide' };
-  },
+      if (data.otpRequired) return { success: true, message: data.message, otpRequired: true };
+      if (data.loggedIn && data.userDto) {
+        return { success: true, message: 'Connexion réussie', user: data.userDto };
+      }
+      return { success: false, message: data.message || 'Échec de la connexion' };
+    } catch (error: any) {
+      return { success: false, message: error.message };
+    }
+  },
 
-  getUsers: async (): Promise<User[]> => {
-    await simulateNetwork();
-    return [...users];
-  },
-  
-  getUser: async (userId: number): Promise<User | undefined> => {
-    await simulateNetwork();
-    return users.find(u => u.user_id === userId);
-  },
+  verifyOtp: async (email: string, otp: string): Promise<{success: boolean; message: string; user?: User}> => {
+    try {
+      const params = new URLSearchParams();
+      params.append('username', email);
+      params.append('otp', otp);
+      const res = await fetch(`${API_URL}/auth/verify-otp?${params.toString()}`, {
+        method: 'POST',
+        credentials: 'include'
+      });
+      const data = await handleResponse(res);
+      if (data.loggedIn && data.userDto) {
+        return { success: true, message: 'OTP vérifié', user: data.userDto };
+      }
+      return { success: false, message: data.message || 'OTP Invalide' };
+    } catch (error: any) {
+      return { success: false, message: error.message };
+    }
+  },
 
-  getUserByEmail: async (email: string): Promise<User | undefined> => {
-    await simulateNetwork();
-    return users.find(u => u.email.toLowerCase() === email.toLowerCase());
-  },
+  resendOtp: async (email: string) => ({ success: true, message: "Code renvoyé" }),
 
-  createUser: async (userData: Omit<User, 'user_id'>): Promise<User> => {
-    await simulateNetwork();
-    const newUser: User = {
-      ...userData,
-      user_id: Date.now(),
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-    users.push(newUser);
-    return newUser;
-  },
+  getUsers: async (): Promise<User[]> => {
+    const res = await fetch(`${API_URL}/user`, { credentials: 'include' });
+    const data = await handleResponse(res);
+    return Array.isArray(data) ? data : [];
+  },
 
-  updateUser: async (userId: number, userData: Partial<User>): Promise<User> => {
-    await simulateNetwork();
-    const userIndex = users.findIndex(u => u.user_id === userId);
-    if (userIndex === -1) throw new Error("User not found");
-    
-    users[userIndex] = {
-      ...users[userIndex],
-      ...userData,
-      updated_at: new Date().toISOString(),
-    };
-    
-    return users[userIndex];
-  },
+  getZones: async (): Promise<Zone[]> => {
+    const res = await fetch(`${API_URL}/zone`, { credentials: 'include' });
+    const data = await handleResponse(res);
+    return Array.isArray(data) ? data : [];
+  },
 
-  deleteUser: async (userId: number): Promise<void> => {
-    await simulateNetwork();
-    const userIndex = users.findIndex(u => u.user_id === userId);
-    if (userIndex === -1) throw new Error("User not found");
-    users.splice(userIndex, 1);
-  },
+  getOrders: async (): Promise<Order[]> => {
+    try {
+      const res = await fetch(`${API_URL}/commande`, { credentials: 'include' });
+      const data = await handleResponse(res);
+      if (Array.isArray(data)) {
+          return data.filter((item: any) => item !== null && item !== undefined).map((order: any) => ({
+              ...order,
+              tasks: Array.isArray(order.tasks) ? order.tasks : [] 
+          }));
+      }
+      return [];
+    } catch (e) {
+      console.error("[Erreur API] getOrders:", e);
+      return [];
+    }
+  },
 
-  getCustomers: async (): Promise<Customer[]> => {
-    await simulateNetwork();
-    return [...customers];
-  },
+  getOrder: async (orderId: number): Promise<Order | undefined> => {
+    const res = await fetch(`${API_URL}/commande/${orderId}`, { credentials: 'include' });
+    const data = await handleResponse(res);
+    if (data) {
+        data.tasks = Array.isArray(data.tasks) ? data.tasks : [];
+    }
+    return data;
+  },
 
-  getCustomer: async (customerId: number): Promise<Customer | undefined> => {
-    await simulateNetwork();
-    return customers.find(c => c.customer_id === customerId);
-  },
+  createOrder: async (orderData: any, logoFile?: File, facadeFile?: File): Promise<Order> => {
+    const formData = new FormData();
+    const jsonBlob = new Blob([JSON.stringify(orderData)], { type: 'application/json' });
+    formData.append('data', jsonBlob);
+    if (logoFile) formData.append('logo', logoFile);
+    if (facadeFile) formData.append('photoFacade', facadeFile);
 
-  createCustomer: async (customerData: Omit<Customer, 'customer_id'>): Promise<Customer> => {
-    await simulateNetwork();
-    const newCustomer: Customer = {
-      ...customerData,
-      customer_id: Date.now(),
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-    customers.push(newCustomer);
-    return newCustomer;
-  },
+    const res = await fetch(`${API_URL}/commande`, {
+      method: 'POST',
+      credentials: 'include',
+      body: formData
+    });
+    return await handleResponse(res);
+  },
 
-  updateCustomer: async (customerId: number, customerData: Partial<Customer>): Promise<Customer> => {
-    await simulateNetwork();
-    const customerIndex = customers.findIndex(c => c.customer_id === customerId);
-    if (customerIndex === -1) throw new Error("Customer not found");
-    
-    customers[customerIndex] = {
-      ...customers[customerIndex],
-      ...customerData,
-      updated_at: new Date().toISOString(),
-    };
-    
-    return customers[customerIndex];
-  },
+  deleteOrder: async (orderId: number): Promise<void> => {
+    await fetch(`${API_URL}/commande/${orderId}`, { method: 'DELETE', credentials: 'include' });
+  },
 
-  deleteCustomer: async (customerId: number): Promise<void> => {
-    await simulateNetwork();
-    const customerIndex = customers.findIndex(c => c.customer_id === customerId);
-    if (customerIndex === -1) throw new Error("Customer not found");
-    customers.splice(customerIndex, 1);
-  },
+  assignTask: async (orderId: number, assigneeId: number, taskType: TaskType): Promise<void> => {
+    await handleResponse(await fetch(`${API_URL}/workflow/assign`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ commandeId: orderId, assigneeId: assigneeId, taskType: taskType }),
+    }));
+  },
 
-  getProducts: async (): Promise<Product[]> => {
-    await simulateNetwork();
-    return [...products];
-  },
+  completeTask: async (taskId: number, file: File): Promise<void> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    await handleResponse(await fetch(`${API_URL}/workflow/task/${taskId}/complete`, {
+      method: 'PUT',
+      credentials: 'include',
+      body: formData
+    }));
+  },
 
-  getProduct: async (productId: number): Promise<Product | undefined> => {
-    await simulateNetwork();
-    return products.find(p => p.product_id === productId);
-  },
+completeTaskSimple: async (taskId: number): Promise<void> => {
+    await handleResponse(await fetch(`${API_URL}/workflow/task/${taskId}/complete-simple`, {
+        method: 'PUT',
+        credentials: 'include'
+    }));
+},
 
-  createProduct: async (productData: Omit<Product, 'product_id'>): Promise<Product> => {
-    await simulateNetwork();
-    const newProduct: Product = {
-      ...productData,
-      product_id: Date.now(),
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-    products.push(newProduct);
-    return newProduct;
-  },
+  validateTask: async (taskId: number, approved: boolean): Promise<void> => {
+    await handleResponse(await fetch(`${API_URL}/workflow/task/${taskId}/validate?approved=${approved}`, {
+      method: 'PUT',
+      credentials: 'include'
+    }));
+  },
 
-  updateProduct: async (productId: number, productData: Partial<Product>): Promise<Product> => {
-    await simulateNetwork();
-    const productIndex = products.findIndex(p => p.product_id === productId);
-    if (productIndex === -1) throw new Error("Product not found");
-    
-    products[productIndex] = {
-      ...products[productIndex],
-      ...productData,
-      updated_at: new Date().toISOString(),
-    };
-    
-    return products[productIndex];
-  },
+  moveOrderToStock: async (orderId: number): Promise<void> => {
+    await handleResponse(await fetch(`${API_URL}/workflow/commande/${orderId}/move-to-stock`, {
+        method: 'PUT',
+        credentials: 'include'
+    }));
+  },
 
-  deleteProduct: async (productId: number): Promise<void> => {
-    await simulateNetwork();
-    const productIndex = products.findIndex(p => p.product_id === productId);
-    if (productIndex === -1) throw new Error("Product not found");
-    products.splice(productIndex, 1);
-  },
+  getDashboardStats: async (): Promise<DashboardStats> => {
+    try {
+      const res = await fetch(`${API_URL}/statistics/dashboard`, { credentials: 'include' });
+      return await handleResponse(res);
+    } catch (e) { return { newOrders: 0, inProgress: 0, completed: 0, breakdown: {} }; }
+  },
 
-  getOrders: async (): Promise<Order[]> => {
-    await simulateNetwork();
-    return [...orders].sort((a, b) => new Date(b.order_date).getTime() - new Date(a.order_date).getTime());
-  },
-  
-  getOrder: async (orderId: number): Promise<Order | undefined> => {
-    await simulateNetwork();
-    return orders.find(o => o.order_id === orderId);
-  },
-  
-  createOrder: async (orderData: Omit<Order, 'order_id' | 'order_number' | 'tasks'>): Promise<Order> => {
-    await simulateNetwork();
-    const newOrder: Order = {
-      ...orderData,
-      order_id: Date.now(),
-      order_number: `CMD-${Date.now().toString().slice(-6)}`,
-      tasks: [],
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-    orders.unshift(newOrder);
-    return newOrder;
-  },
+  getTasksByUser: async (userId: number): Promise<Task[]> => {
+    try {
+      const orders = await api.getOrders();
+      const userTasks: Task[] = [];
+      
+      orders.forEach(order => {
+        if (order.tasks && Array.isArray(order.tasks)) {
+          order.tasks.forEach(task => {
+            if (task.assignee && task.assignee.id === userId) {
+              userTasks.push({ ...task, order: order });
+            }
+          });
+        }
+      });
+      
+      return userTasks;
+    } catch (e) {
+      console.error("Erreur lors de l'extraction des tâches:", e);
+      return [];
+    }
+  },
 
-  updateOrder: async (orderId: number, orderData: Partial<Order>): Promise<Order> => {
-    await simulateNetwork();
-    const orderIndex = orders.findIndex(o => o.order_id === orderId);
-    if (orderIndex === -1) throw new Error("Order not found");
-    
-    orders[orderIndex] = {
-      ...orders[orderIndex],
-      ...orderData,
-      updated_at: new Date().toISOString(),
-    };
-    
-    return orders[orderIndex];
-  },
+  createZone: async (nom: string): Promise<void> => {
+    const res = await fetch(`${API_URL}/zone`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ nom: nom }),
+    });
+    await handleResponse(res);
+  },
 
-  deleteOrder: async (orderId: number): Promise<void> => {
-    await simulateNetwork();
-    const orderIndex = orders.findIndex(o => o.order_id === orderId);
-    if (orderIndex === -1) throw new Error("Order not found");
-    orders.splice(orderIndex, 1);
-  },
-
-  updateOrderStatus: async (orderId: number, status: OrderStatus): Promise<Order> => {
-    await simulateNetwork(800);
-    const orderIndex = orders.findIndex(o => o.order_id === orderId);
-    if (orderIndex === -1) throw new Error("Order not found");
-    
-    orders[orderIndex].status = status;
-    orders[orderIndex].updated_at = new Date().toISOString();
-    
-    return orders[orderIndex];
-  },
-
-  assignTask: async (orderId: number, step_name: string, assigned_to: number, assigned_by: number): Promise<Order> => {
-    await simulateNetwork();
-    const orderIndex = orders.findIndex(o => o.order_id === orderId);
-    if (orderIndex === -1) throw new Error("Order not found");
-
-    const newTask: Task = {
-      task_id: Date.now(),
-      order_id: orderId,
-      step_id: step_name === 'Design' ? 1 : 2,
-      step_name,
-      assigned_to,
-      assigned_by,
-      status: TaskStatus.PENDING,
-      start_date: null,
-      end_date: null,
-      estimated_hours: step_name === 'Design' ? 8 : 16,
-      real_hours: null,
-      comments: '',
-      design_files: [],
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-    
-    orders[orderIndex].tasks.push(newTask);
-
-    if (step_name === 'Design') orders[orderIndex].status = OrderStatus.DESIGN_ASSIGNED;
-    if (step_name === 'Production') orders[orderIndex].status = OrderStatus.PRODUCTION_ASSIGNED;
-
-    return orders[orderIndex];
-  },
-
-  updateTaskStatus: async (orderId: number, taskId: number, taskStatus: TaskStatus): Promise<Task> => {
-    await simulateNetwork();
-    const orderIndex = orders.findIndex(o => o.order_id === orderId);
-    if (orderIndex === -1) throw new Error("Order not found");
-
-    const taskIndex = orders[orderIndex].tasks.findIndex(t => t.task_id === taskId);
-    if (taskIndex === -1) throw new Error("Task not found");
-
-    const task = orders[orderIndex].tasks[taskIndex];
-    task.status = taskStatus;
-    task.updated_at = new Date().toISOString();
-
-    if (taskStatus === TaskStatus.ACCEPTED) {
-      task.start_date = new Date().toISOString();
-      if (task.step_name === "Design") orders[orderIndex].status = OrderStatus.DESIGN_IN_PROGRESS;
-      if (task.step_name === "Production") orders[orderIndex].status = OrderStatus.PRODUCTION_IN_PROGRESS;
-    }
-
-    if (taskStatus === TaskStatus.COMPLETED) {
-      task.end_date = new Date().toISOString();
-      task.real_hours = 6;
-
-      if (task.step_name === "Design") orders[orderIndex].status = OrderStatus.DESIGN_PENDING_APPROVAL;
-      if (task.step_name === "Production") orders[orderIndex].status = OrderStatus.PRODUCTION_COMPLETE;
-    }
-
-    return task;
-  },
-
-  uploadDesignFile: async (taskId: number, file: File, uploadedBy: number): Promise<FileAttachment> => {
-    await simulateNetwork(1000);
-    
-    const attachment: FileAttachment = {
-      file_id: Date.now(),
-      task_id: taskId,
-      file_name: file.name,
-      file_url: URL.createObjectURL(file),
-      file_type: file.type,
-      file_size: file.size,
-      uploaded_by: uploadedBy,
-      uploaded_at: new Date().toISOString(),
-    };
-
-    for (const order of orders) {
-      const task = order.tasks.find(t => t.task_id === taskId);
-      if (task) {
-        if (!task.design_files) task.design_files = [];
-        task.design_files.push(attachment);
-        task.updated_at = new Date().toISOString();
-        break;
-      }
-    }
-
-    return attachment;
-  },
-
-  getTaskDesignFiles: async (taskId: number): Promise<FileAttachment[]> => {
-    await simulateNetwork();
-    for (const order of orders) {
-      const task = order.tasks.find(t => t.task_id === taskId);
-      if (task) return task.design_files || [];
-    }
-    return [];
-  },
-
-  deleteDesignFile: async (fileId: number): Promise<void> => {
-    await simulateNetwork();
-    for (const order of orders) {
-      for (const task of order.tasks) {
-        if (task.design_files) {
-          const index = task.design_files.findIndex(f => f.file_id === fileId);
-          if (index !== -1) {
-            task.design_files.splice(index, 1);
-            task.updated_at = new Date().toISOString();
-            return;
-          }
-        }
-      }
-    }
-    throw new Error("File not found");
-  },
-
-  getUsersByRole: async (role: UserRole): Promise<User[]> => {
-    await simulateNetwork();
-    return users.filter(u => u.roles.includes(role));
-  },
-
-  getOrdersByStatus: async (status: OrderStatus): Promise<Order[]> => {
-    await simulateNetwork();
-    return orders.filter(o => o.status === status);
-  },
-
-  getOrdersByCustomer: async (customerId: number): Promise<Order[]> => {
-    await simulateNetwork();
-    return orders.filter(o => o.customer_id === customerId);
-  },
-
-  getTasksByUser: async (userId: number): Promise<Task[]> => {
-    await simulateNetwork();
-    const results: Task[] = [];
-
-    orders.forEach(order => {
-      order.tasks.forEach(task => {
-        if (task.assigned_to === userId) {
-          results.push(task);
-        }
-      });
-    });
-
-    return results;
-  },
-
-  resendOtp: async (email: string): Promise<{ success: boolean; message: string }> => {
-    await simulateNetwork();
-    return { success: true, message: "OTP renvoyé avec succès" };
-  },
+  deleteZone: async (id: number): Promise<void> => {
+    const res = await fetch(`${API_URL}/zone/${id}`, {
+      method: 'DELETE',
+      credentials: 'include'
+    });
+    await handleResponse(res);
+  },
 };

@@ -6,7 +6,7 @@ import NotificationPanel from './NotificationPanel';
 
 const getRoleClass = (role: UserRole) => {
   switch (role) {
-    case UserRole.ADMIN: return 'bg-red-100 text-red-700 border-red-200';
+    case UserRole.ADMINISTRATEUR: return 'bg-red-100 text-red-700 border-red-200';
     case UserRole.COMMERCIAL: return 'bg-blue-100 text-blue-700 border-blue-200';
     case UserRole.DESIGNER: return 'bg-purple-100 text-purple-700 border-purple-200';
     case UserRole.IMPRIMEUR: return 'bg-green-100 text-green-700 border-green-200';
@@ -17,7 +17,7 @@ const getRoleClass = (role: UserRole) => {
 
 const getRoleDisplayName = (role: UserRole) => {
   switch (role) {
-    case UserRole.ADMIN: return 'Admin';
+    case UserRole.ADMINISTRATEUR: return 'Admin';
     case UserRole.COMMERCIAL: return 'Commercial';
     case UserRole.DESIGNER: return 'Designer';
     case UserRole.IMPRIMEUR: return 'Imprimeur';
@@ -33,7 +33,6 @@ const Header: React.FC = () => {
   const notificationRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
-  // Mock unread count for display (in real app, fetch from context/api)
   const unreadCount = 3; 
 
   useEffect(() => {
@@ -61,12 +60,10 @@ const Header: React.FC = () => {
   return (
     <header className="bg-white shadow-sm border-b border-slate-200 px-6 py-4 flex-shrink-0 z-30 relative">
       <div className="flex items-center justify-between w-full">
-        {/* Spacer */}
         <div className="flex-1"></div>
 
         <div className="flex items-center space-x-4">
           
-          {/* Notifications */}
           <div className="relative" ref={notificationRef}>
             <button
               onClick={() => {
@@ -95,7 +92,6 @@ const Header: React.FC = () => {
             )}
           </div>
 
-          {/* User Menu */}
           <div className="relative" ref={userMenuRef}>
             <button
               onClick={() => {
@@ -106,26 +102,20 @@ const Header: React.FC = () => {
             >
               <div className="text-right hidden md:block">
                 <p className="font-bold text-sm text-slate-800 leading-tight">
-                  {currentUser.first_name} {currentUser.last_name}
+                  {currentUser.username}
                 </p>
                 <div className="flex justify-end flex-wrap gap-1 mt-1">
-                  {currentUser.roles.slice(0, 1).map((role, index) => (
-                    <span
-                      key={index}
-                      className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full border ${getRoleClass(role)}`}
-                    >
-                      {getRoleDisplayName(role)}
-                    </span>
-                  ))}
-                  {currentUser.roles.length > 1 && (
-                     <span className="text-[10px] text-slate-500 font-medium self-center">+{currentUser.roles.length - 1}</span>
-                  )}
+                  <span
+                    className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full border ${getRoleClass(currentUser.role)}`}
+                  >
+                    {getRoleDisplayName(currentUser.role)}
+                  </span>
                 </div>
               </div>
 
               <div className="flex items-center space-x-2">
                 <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl flex items-center justify-center text-white text-sm font-bold shadow-md transform group-hover:scale-105 transition-transform duration-200">
-                  {currentUser.first_name[0]}{currentUser.last_name[0]}
+                  {currentUser.username.substring(0, 2).toUpperCase()}
                 </div>
                 <Icon
                   name="chevron-down"
@@ -138,7 +128,7 @@ const Header: React.FC = () => {
               <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-100 py-2 overflow-hidden ring-1 ring-black ring-opacity-5">
                 <div className="px-5 py-4 border-b border-slate-100 bg-slate-50/50">
                   <p className="font-bold text-slate-900 text-base">
-                    {currentUser.first_name} {currentUser.last_name}
+                    {currentUser.username}
                   </p>
                   <p className="text-xs text-slate-500 font-medium truncate">{currentUser.email}</p>
                 </div>

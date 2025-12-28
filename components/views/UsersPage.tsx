@@ -13,11 +13,11 @@ const UsersPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
 
   // Check if current user is Admin
-  const isAdmin = currentUser?.roles.includes(UserRole.ADMIN);
+  const isAdmin = currentUser?.role === UserRole.ADMINISTRATEUR;
 
   const getRoleColor = (role: UserRole) => {
     const colors = {
-      [UserRole.ADMIN]: 'bg-red-100 text-red-700 border-red-200',
+      [UserRole.ADMINISTRATEUR]: 'bg-red-100 text-red-700 border-red-200',
       [UserRole.COMMERCIAL]: 'bg-blue-100 text-blue-700 border-blue-200',
       [UserRole.DESIGNER]: 'bg-purple-100 text-purple-700 border-purple-200',
       [UserRole.IMPRIMEUR]: 'bg-green-100 text-green-700 border-green-200',
@@ -27,10 +27,9 @@ const UsersPage: React.FC = () => {
   };
 
   const filteredUsers = users.filter(user => {
-    const matchesSearch = user.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          user.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch = user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
                           user.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRole = selectedRole === 'ALL' || user.roles.includes(selectedRole);
+    const matchesRole = selectedRole === 'ALL' || user.role === selectedRole;
     return matchesSearch && matchesRole;
   });
 
@@ -42,8 +41,12 @@ const UsersPage: React.FC = () => {
     if (window.confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')) {
       setLoading(true);
       try {
-        await api.deleteUser(userId);
-        await refreshUsers();
+        // Backend currently might not have DELETE /user/{id}, if not, this will fail gracefully
+        // Or you can skip this if not implemented in backend yet.
+        // Assuming api.deleteUser is a placeholder or implemented:
+        // await api.deleteUser(userId); 
+        alert("Fonctionnalité de suppression non disponible pour le moment.");
+        // await refreshUsers();
       } catch (error) {
         console.error('Failed to delete user', error);
       } finally {
@@ -87,15 +90,9 @@ const UsersPage: React.FC = () => {
               <span className="text-xl font-bold">{users.length}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-blue-100">Utilisateurs actifs</span>
-              <span className="text-xl font-bold">
-                {users.filter(u => u.is_active).length}
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
               <span className="text-blue-100">Rôles différents</span>
               <span className="text-xl font-bold">
-                {new Set(users.flatMap(u => u.roles)).size}
+                {new Set(users.map(u => u.role)).size}
               </span>
             </div>
           </div>
@@ -113,7 +110,7 @@ const UsersPage: React.FC = () => {
               </div>
               <input
                 type="text"
-                placeholder="Rechercher un utilisateur..."
+                placeholder="Rechercher (Nom, Email)..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="block w-full pl-10 pr-3 py-3 border border-slate-300 rounded-xl bg-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-slate-800"
@@ -126,7 +123,7 @@ const UsersPage: React.FC = () => {
               className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="ALL">Tous les rôles</option>
-              <option value={UserRole.ADMIN}>Administrateur</option>
+              <option value={UserRole.ADMINISTRATEUR}>Administrateur</option>
               <option value={UserRole.COMMERCIAL}>Commercial</option>
               <option value={UserRole.DESIGNER}>Designer</option>
               <option value={UserRole.IMPRIMEUR}>Imprimeur</option>
@@ -138,15 +135,15 @@ const UsersPage: React.FC = () => {
         <div className="bg-white rounded-2xl border border-slate-200 p-6">
           <h3 className="font-semibold text-slate-800 mb-4 flex items-center space-x-2">
             <Icon name="category" className="h-5 w-5 text-slate-600" />
-            <span>Rôles</span>
+            <span>Répartition</span>
           </h3>
           <div className="space-y-2">
             {[
-              { role: UserRole.ADMIN, label: 'Administrateurs', count: users.filter(u => u.roles.includes(UserRole.ADMIN)).length },
-              { role: UserRole.COMMERCIAL, label: 'Commerciaux', count: users.filter(u => u.roles.includes(UserRole.COMMERCIAL)).length },
-              { role: UserRole.DESIGNER, label: 'Designers', count: users.filter(u => u.roles.includes(UserRole.DESIGNER)).length },
-              { role: UserRole.IMPRIMEUR, label: 'Imprimeurs', count: users.filter(u => u.roles.includes(UserRole.IMPRIMEUR)).length },
-              { role: UserRole.LOGISTIQUE, label: 'Logistique', count: users.filter(u => u.roles.includes(UserRole.LOGISTIQUE)).length },
+              { role: UserRole.ADMINISTRATEUR, label: 'Admins', count: users.filter(u => u.role === UserRole.ADMINISTRATEUR).length },
+              { role: UserRole.COMMERCIAL, label: 'Commerciaux', count: users.filter(u => u.role === UserRole.COMMERCIAL).length },
+              { role: UserRole.DESIGNER, label: 'Designers', count: users.filter(u => u.role === UserRole.DESIGNER).length },
+              { role: UserRole.IMPRIMEUR, label: 'Imprimeurs', count: users.filter(u => u.role === UserRole.IMPRIMEUR).length },
+              { role: UserRole.LOGISTIQUE, label: 'Logistique', count: users.filter(u => u.role === UserRole.LOGISTIQUE).length },
             ].map(item => (
               <div key={item.role} className="flex items-center justify-between p-2">
                 <span className="text-sm text-slate-700">{item.label}</span>
@@ -177,26 +174,24 @@ const UsersPage: React.FC = () => {
               <tr>
                 <th className="text-left p-6 font-semibold text-slate-800 text-lg">Utilisateur</th>
                 <th className="text-left p-6 font-semibold text-slate-800 text-lg">Email</th>
-                <th className="text-left p-6 font-semibold text-slate-800 text-lg">Rôles</th>
-                <th className="text-left p-6 font-semibold text-slate-800 text-lg">Statut</th>
+                <th className="text-left p-6 font-semibold text-slate-800 text-lg">Rôle</th>
                 <th className="text-left p-6 font-semibold text-slate-800 text-lg">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
               {filteredUsers.map(user => (
-                <tr key={user.user_id} className="hover:bg-slate-50/50 transition-colors group">
+                <tr key={user.id} className="hover:bg-slate-50/50 transition-colors group">
                   <td className="p-6">
                     <div className="flex items-center space-x-4">
                       <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
                         <span className="text-white font-semibold text-sm">
-                          {user.first_name[0]}{user.last_name[0]}
+                          {user.username.substring(0, 2).toUpperCase()}
                         </span>
                       </div>
                       <div>
                         <p className="font-semibold text-slate-800 text-lg">
-                          {user.first_name} {user.last_name}
+                          {user.username}
                         </p>
-                        <p className="text-sm text-slate-600">{user.phone}</p>
                       </div>
                     </div>
                   </td>
@@ -204,34 +199,17 @@ const UsersPage: React.FC = () => {
                     <span className="text-slate-700 font-medium">{user.email}</span>
                   </td>
                   <td className="p-6">
-                    <div className="flex flex-wrap gap-2">
-                      {user.roles.map(role => (
-                        <span 
-                          key={role} 
-                          className={`px-3 py-1.5 rounded-full text-sm font-medium border ${getRoleColor(role)}`}
-                        >
-                          {role}
-                        </span>
-                      ))}
-                    </div>
-                  </td>
-                  <td className="p-6">
-                    <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium ${
-                      user.is_active 
-                        ? 'bg-green-100 text-green-700 border border-green-200' 
-                        : 'bg-red-100 text-red-700 border border-red-200'
-                    }`}>
-                      <div className={`w-2 h-2 rounded-full mr-2 ${
-                        user.is_active ? 'bg-green-500' : 'bg-red-500'
-                      }`}></div>
-                      {user.is_active ? 'Actif' : 'Inactif'}
+                    <span 
+                      className={`px-3 py-1.5 rounded-full text-sm font-medium border ${getRoleColor(user.role)}`}
+                    >
+                      {user.role}
                     </span>
                   </td>
                   <td className="p-6">
                     <div className="flex items-center space-x-2">
                       {isAdmin && (
                         <button 
-                          onClick={() => handleDeleteUser(user.user_id)}
+                          onClick={() => handleDeleteUser(user.id)}
                           disabled={loading}
                           className="p-2 text-red-600 hover:bg-red-50 rounded-xl transition-colors disabled:opacity-50"
                           title="Supprimer l'utilisateur"

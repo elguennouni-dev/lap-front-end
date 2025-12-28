@@ -1,4 +1,3 @@
-// components/common/FileUpload.tsx
 import React, { useState, useRef } from 'react';
 import { Icon } from './Icon';
 
@@ -6,14 +5,14 @@ interface FileUploadProps {
   onFilesSelected: (files: File[]) => void;
   acceptedTypes?: string;
   maxFiles?: number;
-  maxSize?: number; // in MB
+  maxSize?: number; 
 }
 
 const FileUpload: React.FC<FileUploadProps> = ({ 
   onFilesSelected, 
   acceptedTypes = '.pdf,.jpg,.jpeg,.png,.ai,.psd',
   maxFiles = 5,
-  maxSize = 10 // 10MB
+  maxSize = 10 
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState('');
@@ -23,13 +22,11 @@ const FileUpload: React.FC<FileUploadProps> = ({
     const fileArray = Array.from(files);
     setError('');
 
-    // Validate file count
     if (fileArray.length > maxFiles) {
       setError(`Vous ne pouvez uploader que ${maxFiles} fichiers maximum`);
       return;
     }
 
-    // Validate file sizes
     const oversizedFiles = fileArray.filter(file => file.size > maxSize * 1024 * 1024);
     if (oversizedFiles.length > 0) {
       setError(`Certains fichiers dépassent la taille maximale de ${maxSize}MB`);
