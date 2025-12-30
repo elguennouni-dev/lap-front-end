@@ -25,9 +25,7 @@ const OrdersPage: React.FC = () => {
     setLoading(true);
     try {
       const ordersData = await api.getOrders();
-      // Ensure we have a valid array
       const validOrders = Array.isArray(ordersData) ? ordersData : [];
-      // Double filtering to be absolutely safe against nulls in state
       setOrders(validOrders.filter(o => o !== null && o !== undefined));
     } catch (error) {
       console.error('Failed to fetch data', error);
@@ -46,8 +44,7 @@ const OrdersPage: React.FC = () => {
     }
 
     return orders.filter(order => {
-      // 1. Safety Check: If order is null, skip it
-      if (!order) return false;
+      // if (!order) return false;
 
       if (currentUser.role === UserRole.COMMERCIAL) {
         return true; 
