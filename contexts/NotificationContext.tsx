@@ -29,7 +29,7 @@ interface NotificationContextType {
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
-const API_BASE_URL = 'http://localhost:2099';
+const API_BASE_URL = 'https://localhost:2099';
 const WS_URL = `${API_BASE_URL}/ws`;
 const GENERAL_TOPIC = '/topic/orders/updates';
 
