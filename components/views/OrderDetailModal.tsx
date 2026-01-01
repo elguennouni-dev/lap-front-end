@@ -257,8 +257,7 @@ const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ orderId, onClose })
                     </button>
                   </div>
                 </div>
-                {/* حاوية العرض مع التحكم في التكبير */}
-                <div className="relative h-[400px] bg-slate-100  flex items-center justify-center cursor-move p-4">
+                <div className="relative h-[400px] bg-slate-100 overflow-auto flex items-center justify-center cursor-move p-4">
                   <img 
                     src={designTask.designUrl} 
                     alt="Design Preview" 

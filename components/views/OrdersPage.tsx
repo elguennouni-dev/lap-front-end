@@ -44,46 +44,34 @@ const OrdersPage: React.FC = () => {
     }
 
     return orders.filter(order => {
-      // if (!order) return false;
-
+      if (!order) return false;
       if (currentUser.role === UserRole.COMMERCIAL) {
         return true; 
       }
-      
-      // 2. Safety Check: Ensure tasks array exists
-      const tasks = order.tasks || [];
-      
-      // 3. Safety Check: Check if any task is assigned to current user
+      const tasks = order.tasks || [];      
       return tasks.some(t => t && t.assignee && t.assignee.id === currentUser.id);
     });
   };
 
-  // Get safe list
   const accessibleOrders = getAccessibleOrders();
 
   let filteredOrders = accessibleOrders.filter(order => {
-    // Redundant but safe check
     if (!order) return false;
 
     const matchesStatus = filterStatus === 'ALL' || order.etat === filterStatus;
     
-    // Search Safety: Ensure properties exist before calling toLowerCase()
     const idMatch = String(order.id || '').includes(searchTerm);
     const nameMatch = (order.nomPropriete || '').toLowerCase().includes(searchTerm.toLowerCase());
     
     return matchesStatus && (idMatch || nameMatch);
   });
 
-    // 🛑 NEW CODE: Sorting from newest to oldest (A-Z or Date descending)
     filteredOrders = filteredOrders.sort((a, b) => {
-        // Fallback to ID if createdDate is missing, though createdDate is preferred.
         const dateA = a.createdDate ? new Date(a.createdDate).getTime() : a.id;
         const dateB = b.createdDate ? new Date(b.createdDate).getTime() : b.id;
         
-        // Sort descending (b - a = Newest first)
         return dateB - dateA; 
     });
-    // 🛑 END NEW CODE
 
   const getStatusConfig = (status: OrderStatus) => {
     const configs = {
